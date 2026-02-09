@@ -4,18 +4,12 @@ from typing import List
 
 class MinHashUtils:
     
-    def __init__(self, num_perms: int = 128, threshold: float = 0.5, k: int = 5, docs: List[str] = None):
-        if docs is None or len(docs) == 0:
-            print("Need Docs!")
-            raise ValueError("At least one document is required")
+    def __init__(self, num_perms: int = 128, threshold: float = 0.5, k: int = 5):
 
-        self.k = k 
         self.docs = []
-
-        for doc in docs:
-            self.docs.append((self.shingle(doc)))
         self.num_perms = num_perms
         self.threshold = threshold
+        self.k = k
         self.hashes = []
         self.lsh = MinHashLSH(threshold=self.threshold, num_perm=self.num_perms)
 
@@ -31,6 +25,14 @@ class MinHashUtils:
         
         return list(set(text[i:i+self.k] for i in range(len(text) - self.k + 1)))
 
+
+    def feed_docs(self, docs: List[str]):
+        if docs is None or len(docs) == 0:
+            print("Need Docs!")
+            raise ValueError("At least one document is required")
+        for doc in docs:
+            self.docs.append((self.shingle(doc)))
+        
 
     def get_hashes(self):
         self.hashes = []
@@ -59,12 +61,12 @@ class MinHashUtils:
 
         # add the query document to the index for future queries
         # This section ensures that any new file can 
-        self.hashes.append(m)
-        self.lsh.insert(len(self.hashes) - 1, m)  # Index while creating hashes
+        
 
         if(doc_content not in self.docs):
             self.docs.append(self.shingle(doc_content))
-        print("Approximate neighbours with Jaccard similarity > 0.5", result)
+            self.hashes.append(m)
+            self.lsh.insert(len(self.hashes) - 1, m)  # Index while creating hashes
         return result
 
             
@@ -84,31 +86,37 @@ class MinHashUtils:
 
 
 def main():
-    doc1 = 'minhash is a probabilistic data structure for estimating the similarity between datasets'
-    doc2 = 'minhash is a probability data structure for estimating the similarity between documents'
-    doc3 = "the dog in the fog"
+#     doc1 = 'minhash is a probabilistic data structure for estimating the similarity between datasets'
+#     doc2 = 'minhash is a probability data structure for estimating the similarity between documents'
+
+    with open("./testcases/tc1/A.txt", "r") as f:
+        doc1 = f.read()
+    with open("./testcases/tc1/B.txt", "r") as f:
+        doc2 = f.read()
     
-    utils = MinHashUtils(docs=[doc1, doc2, doc3])
+    doc3 = "the dog in the fog"
+    utils = MinHashUtils()
+    utils.feed_docs([doc1, doc2, doc3])
     similarities = utils.get_pairwise_similarity()
     
     print("Pairwise Jaccard Similarities (3 docs):")
     print(similarities)
 
-    doc4 = "My name is Aryan"
-    query_result = utils.query_similar(doc4)
-    print("Documents similar to doc4:", query_result)
+    # doc4 = "My name is Aryan"
+    # query_result = utils.query_similar(doc4)
+    # print("Documents similar to doc4:", query_result)
 
-    doc5 = "the frog in the dog"
-    query_result = utils.query_similar(doc5)
-    print("Documents similar to doc5:", query_result)
+    # doc5 = "the frog in the dog"
+    # query_result = utils.query_similar(doc5)
+    # print("Documents similar to doc5:", query_result)
 
-    doc6 = "the frog in the cat"
-    query_result = utils.query_similar(doc6)
-    print("Documents similar to doc6:", query_result)
+    # doc6 = "the frog in the cat"
+    # query_result = utils.query_similar(doc6)
+    # print("Documents similar to doc6:", query_result)
 
-    print("\nPairwise Jaccard Similarities (6 docs):")
-    similarities = utils.get_pairwise_similarity()  # Recalculate!
-    print(similarities)
+    # print("\nPairwise Jaccard Similarities (6 docs):")
+    # similarities = utils.get_pairwise_similarity()
+    # print(similarities)
 
 
 if(__name__ == "__main__"):
