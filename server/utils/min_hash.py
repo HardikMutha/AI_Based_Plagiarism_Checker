@@ -1,10 +1,10 @@
 
-from datasketch import MinHash
+from datasketch import MinHash, MinHashLSH
 from typing import List
 
 class MinHashUtils:
     
-    def __init__(self, num_perms: int = 128, k: int = 5, docs: List[str] = None):
+    def __init__(self, num_perms: int = 128, threshold: float = 0.5, k: int = 5, docs: List[str] = None):
         if docs is None or len(docs) == 0:
             print("Need Docs!")
             raise ValueError("At least one document is required")
@@ -15,7 +15,9 @@ class MinHashUtils:
         for doc in docs:
             self.docs.append((self.shingle(doc)))
         self.num_perms = num_perms
+        self.threshold = threshold
         self.hashes = []
+        self.lsh = MinHashLSH(threshold=self.threshold, num_perm=self.num_perms)
 
     def shingle(self, text: str) -> set:
         """
@@ -32,20 +34,46 @@ class MinHashUtils:
 
     def get_hashes(self):
         self.hashes = []
-        for doc in self.docs:
+        self.lsh = MinHashLSH(threshold=self.threshold, num_perm=self.num_perms)
+        for i, doc in enumerate(self.docs):
             m = MinHash(num_perm=self.num_perms)
             for d in doc:
                 m.update(d.encode('utf8'))
             self.hashes.append(m)
-    
-    def get_pairwise_similarity(self):
+            self.lsh.insert(i, m)  # Index while creating hashes
 
+
+    def create_lsh_index(self):
+        if not self.hashes:
+            self.get_hashes()
+        for i, m in enumerate(self.hashes):
+            self.lsh.insert(f"doc_{i}", m)
+    
+    def query_similar(self, doc_content: str):
+        if not self.hashes:
+            self.get_hashes()
+        m = MinHash(num_perm=self.num_perms)
+        for d in self.shingle(doc_content):
+            m.update(d.encode('utf8'))
+        result = self.lsh.query(m)
+
+        # add the query document to the index for future queries
+        # This section ensures that any new file can 
+        self.hashes.append(m)
+        self.lsh.insert(len(self.hashes) - 1, m)  # Index while creating hashes
+
+        if(doc_content not in self.docs):
+            self.docs.append(self.shingle(doc_content))
+        print("Approximate neighbours with Jaccard similarity > 0.5", result)
+        return result
+
+            
+    def get_pairwise_similarity(self):
         """
             Returns jaccard similarity between each document
         """
-
-        # Compute MinHash signatures for all documents
-        self.get_hashes()
+        if not self.hashes:
+            self.get_hashes()
         similarities = {}
         for i in range(len(self.hashes)):
             for j in range(i + 1, len(self.hashes)):
@@ -63,11 +91,25 @@ def main():
     utils = MinHashUtils(docs=[doc1, doc2, doc3])
     similarities = utils.get_pairwise_similarity()
     
-    print("Pairwise Jaccard Similarities:")
+    print("Pairwise Jaccard Similarities (3 docs):")
     print(similarities)
 
-    # utils = MinHashUtils(docs=[])
-    # similarities = utils.get_pairwise_similarity()
+    doc4 = "My name is Aryan"
+    query_result = utils.query_similar(doc4)
+    print("Documents similar to doc4:", query_result)
+
+    doc5 = "the frog in the dog"
+    query_result = utils.query_similar(doc5)
+    print("Documents similar to doc5:", query_result)
+
+    doc6 = "the frog in the cat"
+    query_result = utils.query_similar(doc6)
+    print("Documents similar to doc6:", query_result)
+
+    print("\nPairwise Jaccard Similarities (6 docs):")
+    similarities = utils.get_pairwise_similarity()  # Recalculate!
+    print(similarities)
+
 
 if(__name__ == "__main__"):
     main()
