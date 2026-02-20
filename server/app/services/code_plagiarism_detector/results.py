@@ -26,8 +26,8 @@ class PlagiarismResult:
 
     def __post_init__(self):
         self.overall_score = round(
-            self.subtree_similarity * 30
-            + self.sequence_similarity * 40
+            self.subtree_similarity * 45
+            + self.sequence_similarity * 25
             + self.profile_similarity * 30,
             2,
         )
