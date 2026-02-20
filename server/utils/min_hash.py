@@ -72,17 +72,24 @@ class MinHashUtils:
             
     def get_pairwise_similarity(self):
         """
-            Returns jaccard similarity between each document
+        Returns jaccard similarity between each document
         """
         if not self.hashes:
             self.get_hashes()
-        similarities = {}
+
+        similarities = []
+
         for i in range(len(self.hashes)):
             for j in range(i + 1, len(self.hashes)):
                 sim = self.hashes[i].jaccard(self.hashes[j])
-                similarities[(i, j)] = sim
-        
+                similarities.append({
+                    "doc1": i,
+                    "doc2": j,
+                    "similarity": sim
+                })
+        print(similarities)
         return similarities
+
 
 
 def main():
