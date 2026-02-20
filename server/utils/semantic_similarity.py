@@ -31,8 +31,9 @@ class SemanticUtils:
 
         e1 = self.model.encode(c1, batch_size=16, show_progress_bar=True)
         e2 = self.model.encode(c2, batch_size=16, show_progress_bar=True)
-
-        return cosine_similarity(e1, e2)
+        
+        cosine_mat = cosine_similarity(e1, e2)
+        return cosine_mat
 
     def aggregate_similarity(self, S, tau=0.8, top_frac=0.05):
         max_sim = S.max()
@@ -58,8 +59,11 @@ def main():
     utils = SemanticUtils()
 
     S = utils.similarity_matrix(text1, text2)
-    scores = utils.aggregate_similarity(S)
+    print("COSINE MATRIX: ")
+    print(S)
 
+
+    scores = utils.aggregate_similarity(S)
     print(scores)
 
 
