@@ -1,11 +1,14 @@
 import json
-
 from sentence_transformers import SentenceTransformer
 import textract
 import os
+import sys
+from pathlib import Path
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from app.utils.extract_files import extract_text
+
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 class SemanticUtils:
     def __init__(self):
