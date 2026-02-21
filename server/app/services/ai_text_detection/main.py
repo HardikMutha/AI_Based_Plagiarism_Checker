@@ -24,7 +24,7 @@ text2 = """
 
 Get ready to solve real-world problems, build innovative solutions, and compete for a *₹1,00,000 prize pool* 💻🔥
 
-👥 *Team Size:* 2–4 members (inter-branch, inter-year, inter-college allowed)
+👥 *Team Size:* 2-4 members (inter-branch, inter-year, inter-college allowed)
 
  📅 Important Dates
 
