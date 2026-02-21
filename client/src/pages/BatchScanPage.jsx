@@ -31,7 +31,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ComparisonCard } from "@/components/ComparisonCard"
+import { CodeCheckReport } from "@/components/reports/CodeCheckReport"
+import { MinHashReport } from "@/components/reports/MinHashReport"
+import { SemanticReport } from "@/components/reports/SemanticReport"
 
 // ── Route config ────────────────────────────────────────────────
 const SCAN_OPTIONS = [
@@ -47,7 +49,7 @@ const SCAN_OPTIONS = [
   },
   {
     value: "text_minhash",
-    label: "Text — MinHash",
+    label: "Text  MinHash",
     description: "Fast approximate duplicate detection using MinHash signatures",
     route: "/api/text/minhash",
     icon: FileText,
@@ -57,7 +59,7 @@ const SCAN_OPTIONS = [
   },
   {
     value: "text_semantic",
-    label: "Text — Semantic",
+    label: "Text  Semantic",
     description: "Deep learning-based semantic similarity comparison",
     route: "/api/text/semantic_similarity",
     icon: Sparkles,
@@ -245,7 +247,7 @@ const BatchScanPage = () => {
       })
 
       setResults(result)
-      toast.success(`Scan complete — ${result.total_comparisons} comparisons made.`)
+      toast.success(`Scan complete  ${result.total_comparisons} comparisons made.`)
     } catch (err) {
       setError(err.message)
       toast.error(err.message)
@@ -286,7 +288,7 @@ const BatchScanPage = () => {
           <motion.div variants={item}>
             <h2 className="text-3xl font-bold tracking-tight">Batch Plagiarism Scan</h2>
             <p className="text-muted-foreground mt-1">
-              Upload multiple files or a zip archive — we'll handle the rest.
+              Upload multiple files or a zip archive  we'll handle the rest.
             </p>
           </motion.div>
 
@@ -364,189 +366,189 @@ const BatchScanPage = () => {
 
               <CardContent>
                 {inputMode === "file" ? (
-                <div>
-                  <div
-                    id="file-drop-zone"
-                    onClick={() => inputRef.current?.click()}
-                    onDragOver={onDragOver}
-                    onDragLeave={onDragLeave}
-                    onDrop={onDrop}
-                    className={`
+                  <div>
+                    <div
+                      id="file-drop-zone"
+                      onClick={() => inputRef.current?.click()}
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      className={`
                     relative cursor-pointer rounded-xl border-2 border-dashed p-10
                     flex flex-col items-center justify-center gap-3
                     transition-all duration-200
                     ${dragOver
-                        ? "border-primary bg-primary/5 scale-[1.01]"
-                        : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
-                      }
+                          ? "border-primary bg-primary/5 scale-[1.01]"
+                          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+                        }
                   `}
-                  >
-                    <motion.div
-                      animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     >
-                      <div className="p-4 rounded-full bg-primary/10">
-                        <Upload className="h-8 w-8 text-primary" />
-                      </div>
-                    </motion.div>
-                    <div className="text-center">
-                      <p className="font-medium">
-                        {dragOver ? "Drop files here" : "Click or drag files here"}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Supports any file type — multiple files will be zipped automatically
-                      </p>
-                    </div>
-                    <input
-                      ref={inputRef}
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files.length) addFiles(e.target.files)
-                        e.target.value = ""
-                      }}
-                    />
-                  </div>
-
-                  <AnimatePresence>
-                    {files.length > 0 && (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 space-y-2"
+                        animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium">
-                            {files.length} file{files.length !== 1 && "s"} selected
-                            <span className="text-muted-foreground ml-2">
-                              ({formatBytes(files.reduce((s, f) => s + f.size, 0))} total)
-                            </span>
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-destructive hover:text-destructive gap-1"
-                            onClick={(e) => { e.stopPropagation(); clearAll() }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Clear all
-                          </Button>
-                        </div>
-
-                        <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
-                          {files.map((file, idx) => {
-                            const Icon = getFileIcon(file.name)
-                            return (
-                              <motion.div
-                                key={`${file.name}-${file.size}`}
-                                initial={{ opacity: 0, x: -12 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 12 }}
-                                transition={{ delay: idx * 0.03 }}
-                                className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="p-1.5 rounded-md bg-muted">
-                                    <Icon className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate">{file.name}</p>
-                                    <p className="text-[11px] text-muted-foreground">
-                                      {formatBytes(file.size)}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); removeFile(idx) }}
-                                  className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
-                                >
-                                  <X className="h-4 w-4 text-destructive" />
-                                </button>
-                              </motion.div>
-                            )
-                          })}
+                        <div className="p-4 rounded-full bg-primary/10">
+                          <Upload className="h-8 w-8 text-primary" />
                         </div>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                      <div className="text-center">
+                        <p className="font-medium">
+                          {dragOver ? "Drop files here" : "Click or drag files here"}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Supports any file type  multiple files will be zipped automatically
+                        </p>
+                      </div>
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files.length) addFiles(e.target.files)
+                          e.target.value = ""
+                        }}
+                      />
+                    </div>
+
+                    <AnimatePresence>
+                      {files.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4 space-y-2"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium">
+                              {files.length} file{files.length !== 1 && "s"} selected
+                              <span className="text-muted-foreground ml-2">
+                                ({formatBytes(files.reduce((s, f) => s + f.size, 0))} total)
+                              </span>
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-destructive hover:text-destructive gap-1"
+                              onClick={(e) => { e.stopPropagation(); clearAll() }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Clear all
+                            </Button>
+                          </div>
+
+                          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                            {files.map((file, idx) => {
+                              const Icon = getFileIcon(file.name)
+                              return (
+                                <motion.div
+                                  key={`${file.name}-${file.size}`}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: 12 }}
+                                  transition={{ delay: idx * 0.03 }}
+                                  className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="p-1.5 rounded-md bg-muted">
+                                      <Icon className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium truncate">{file.name}</p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {formatBytes(file.size)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); removeFile(idx) }}
+                                    className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
+                                  >
+                                    <X className="h-4 w-4 text-destructive" />
+                                  </button>
+                                </motion.div>
+                              )
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                 ) : (
 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-muted-foreground">Text A</label>
-                        {scanType === "code_batch" && (
-                          <Select value={langA} onValueChange={setLangA}>
-                            <SelectTrigger className="w-36 h-7 text-xs">
-                              <SelectValue placeholder="Language…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CODE_LANG_OPTIONS.map((lang) => (
-                                <SelectItem key={lang.value} value={lang.value}>
-                                  {lang.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-muted-foreground">Text A</label>
+                          {scanType === "code_batch" && (
+                            <Select value={langA} onValueChange={setLangA}>
+                              <SelectTrigger className="w-36 h-7 text-xs">
+                                <SelectValue placeholder="Language…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CODE_LANG_OPTIONS.map((lang) => (
+                                  <SelectItem key={lang.value} value={lang.value}>
+                                    {lang.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                        <textarea
+                          value={codeA}
+                          onChange={(e) => setCodeA(e.target.value)}
+                          placeholder="Paste first text/code here…"
+                          spellCheck={false}
+                          className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        />
+                        {codeA.trim() && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {codeA.split("\n").length} lines · {codeA.length} chars
+                          </p>
                         )}
                       </div>
-                      <textarea
-                        value={codeA}
-                        onChange={(e) => setCodeA(e.target.value)}
-                        placeholder="Paste first text/code here…"
-                        spellCheck={false}
-                        className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
-                      />
-                      {codeA.trim() && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {codeA.split("\n").length} lines · {codeA.length} chars
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-muted-foreground">Text B</label>
-                        {scanType === "code_batch" && (
-                          <Select value={langB} onValueChange={setLangB}>
-                            <SelectTrigger className="w-36 h-7 text-xs">
-                              <SelectValue placeholder="Language…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CODE_LANG_OPTIONS.map((lang) => (
-                                <SelectItem key={lang.value} value={lang.value}>
-                                  {lang.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-muted-foreground">Text B</label>
+                          {scanType === "code_batch" && (
+                            <Select value={langB} onValueChange={setLangB}>
+                              <SelectTrigger className="w-36 h-7 text-xs">
+                                <SelectValue placeholder="Language…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CODE_LANG_OPTIONS.map((lang) => (
+                                  <SelectItem key={lang.value} value={lang.value}>
+                                    {lang.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                        <textarea
+                          value={codeB}
+                          onChange={(e) => setCodeB(e.target.value)}
+                          placeholder="Paste second text/code here…"
+                          spellCheck={false}
+                          className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                        />
+                        {codeB.trim() && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {codeB.split("\n").length} lines · {codeB.length} chars
+                          </p>
                         )}
                       </div>
-                      <textarea
-                        value={codeB}
-                        onChange={(e) => setCodeB(e.target.value)}
-                        placeholder="Paste second text/code here…"
-                        spellCheck={false}
-                        className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
-                      />
-                      {codeB.trim() && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {codeB.split("\n").length} lines · {codeB.length} chars
-                        </p>
-                      )}
                     </div>
                   </div>
-                </div>
                 )}
               </CardContent>
-            
-            
-            
-            
+
+
+
+
             </Card>
           </motion.div>
 
@@ -651,14 +653,16 @@ const BatchScanPage = () => {
                 {/* Comparison cards */}
                 {results.results && results.results.length > 0 ? (
                   <div className="space-y-3">
-                    {results.results.map((r, idx) => (
-                      <ComparisonCard
-                        key={idx}
-                        data={r}
-                        index={idx}
-                        scoreScale={selectedOption?.scoreScale ?? 100}
-                      />
-                    ))}
+                    {results.results.map((r, idx) => {
+                      const scale = selectedOption?.scoreScale ?? 100
+                      if (scanType === "code_batch") {
+                        return <CodeCheckReport key={idx} data={r} index={idx} scoreScale={scale} />
+                      }
+                      if (scanType === "text_minhash") {
+                        return <MinHashReport key={idx} data={r} index={idx} scoreScale={scale} />
+                      }
+                      return <SemanticReport key={idx} data={r} index={idx} scoreScale={scale} />
+                    })}
                   </div>
                 ) : (
                   <Card>

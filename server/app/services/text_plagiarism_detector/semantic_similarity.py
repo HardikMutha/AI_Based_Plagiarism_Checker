@@ -34,64 +34,6 @@ class SemanticUtils:
             start += (window_size - overlap)
 
         return chunks
-
-    # def similarity_matrix(self, text1, text2):
-    #     c1 = self.sliding_window_chunk(text1)
-    #     c2 = self.sliding_window_chunk(text2)
-
-    #     self.chunks1 = c1
-    #     self.chunks2 = c2
-
-    #     e1 = self.model.encode(c1, batch_size=16, show_progress_bar=True)
-    #     e2 = self.model.encode(c2, batch_size=16, show_progress_bar=True)
-
-    #     return cosine_similarity(e1, e2).tolist()
-
-    # def aggregate_similarity(self, S, tau=0.8, top_frac=0.05):
-    #     S = np.array(S)
-        
-    #     max_sim = float(S.max())
-        
-    #     k = max(1, int(top_frac * S.size))
-    #     topk_mean = float(np.mean(np.sort(S.flatten())[-k:]))
-        
-    #     cov_ab = (S.max(axis=1) >= tau).mean()
-    #     cov_ba = (S.max(axis=0) >= tau).mean()
-    #     coverage = float(0.5 * (cov_ab + cov_ba))
-        
-    #     # Weighted composite — tune weights to your use case
-    #     overall = (
-    #         0.2 * max_sim +
-    #         0.5 * topk_mean +
-    #         0.3 * coverage
-    #     )
-        
-    #     return {
-    #         "max": max_sim,
-    #         "topk_mean": topk_mean,
-    #         "coverage": coverage,
-    #         "overall": round(overall, 4)
-    #     }
-    
-    # def compare_files(self, filepaths: list):
-    #     ret = []
-    #     for i in range(len(filepaths)):
-    #         for j in range(i + 1, len(filepaths)):
-    #             text1 = self.extract_text(filepaths[i])
-    #             text2 = self.extract_text(filepaths[j])
-
-    #             S = self.similarity_matrix(text1, text2)
-
-    #             res = {
-    #                 "file_a": filepaths[i],
-    #                 "file_b": filepaths[j],
-    #                 "type": "text",
-    #                 "overall_score": S
-    #                 # "similar_lines": []
-    #             }
-
-    #             ret.append(res)
-    #     return ret
     def similarity_matrix(self, text1, text2):
         c1 = self.sliding_window_chunk(text1)
         c2 = self.sliding_window_chunk(text2)
@@ -115,8 +57,8 @@ class SemanticUtils:
         
         overall = (
             0.2 * max_sim +
-            0.5 * topk_mean +
-            0.3 * coverage
+            0.7 * topk_mean +
+            0.1 * coverage
         )
 
         similar_chunks = []
@@ -128,12 +70,20 @@ class SemanticUtils:
                 "text_b": chunks2[best_j]
             })
         similar_chunks.sort(key=lambda x: x["similarity"], reverse=True)
-        
+        overall = round(overall, 4)
+        verdict = "LIKELY NOT PLAGIARISED"
+        if overall >= 0.40:
+            verdict = "POSSIBLY PLAGIARISED"
+        if overall >= 0.75:
+            verdict = "LIKELY PLAGIARISED"
+        if overall >= 0.90:
+            verdict = "ALMOST CERTAINLY PLAGIARISED"
         return {
             "max": max_sim,
             "topk_mean": topk_mean,
             "coverage": coverage,
-            "overall_score": round(overall, 4),
+            "overall_score": overall,
+            "verdict": verdict,
             "similar_chunks": similar_chunks
         }
 

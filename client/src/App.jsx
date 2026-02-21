@@ -9,6 +9,8 @@ import CitationPage from "./pages/CitationPage"
 import ReportHistoryPage from "./pages/ReportHistoryPage"
 import ReportViewPage from "./pages/ReportViewPage"
 import PDFAnalysisPage from "./pages/PDFAnalysisPage"
+import AssignmentsPage from "./pages/AssignmentsPage"
+import AssignmentDetailPage from "./pages/AssignmentDetailPage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import { SidebarProvider } from "./components/ui/sidebar"
 import { AppSidebar } from "./components/app-sidebar"
@@ -60,6 +62,8 @@ function App() {
           <Route path="/batch-scan" element={<BatchScanPage />} />
           <Route path="/citations" element={<CitationPage />} />
           <Route path="/pdf-analysis" element={<PDFAnalysisPage />} />
+          <Route path="/assignments" element={<AssignmentsPage />} />
+          <Route path="/assignments/:id" element={<AssignmentDetailPage />} />
           <Route path="/reports" element={<ReportHistoryPage />} />
           <Route path="/reports/:id" element={<ReportViewPage />} />
           <Route path="/settings" element={<DashboardPage />} />

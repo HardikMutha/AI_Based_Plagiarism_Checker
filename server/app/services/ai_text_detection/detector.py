@@ -1,6 +1,6 @@
 #type:ignore
 """
-AI Text Detector — Pipeline
+AI Text Detector  Pipeline
 
 Orchestrates the 3 detection layers and produces a final verdict.
 

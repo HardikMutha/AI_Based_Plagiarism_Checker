@@ -122,7 +122,7 @@ _SIGNAL_META: dict[str, dict] = {
     "em_dash_usage": {
         "label": "Em-Dash Usage",
         "group": "textual",
-        "tip": "Use of em-dashes (—) in comments or strings",
+        "tip": "Use of em-dashes () in comments or strings",
     },
 }
 
@@ -741,8 +741,8 @@ class AICodeDetector:
         return min(1.0, len(matches) / 5)
     
     def _em_dash_usage(self, code: str) -> float:
-        """Use of em-dashes (—) in comments or strings is a strong AI signal."""
-        em_dash_count = code.count("—")
+        """Use of em-dashes () in comments or strings is a strong AI signal."""
+        em_dash_count = code.count("")
         if em_dash_count == 0:
             return 0.0
         return min(1.0, em_dash_count / 5)

@@ -28,7 +28,7 @@ import { Link } from "react-router-dom"
 // ── Type config ─────────────────────────────────────────────────
 const TYPE_CONFIG = {
     ast_comparison: {
-        label: "Code — AST",
+        label: "Code  AST",
         icon: FileCode,
         color: "text-violet-500",
         bg: "bg-violet-500/10",
@@ -37,7 +37,7 @@ const TYPE_CONFIG = {
         scoreScale: 100,
     },
     min_hash: {
-        label: "Text — MinHash",
+        label: "Text  MinHash",
         icon: FileText,
         color: "text-sky-500",
         bg: "bg-sky-500/10",
@@ -46,7 +46,7 @@ const TYPE_CONFIG = {
         scoreScale: 1,
     },
     semantic_similarity: {
-        label: "Text — Semantic",
+        label: "Text  Semantic",
         icon: Sparkles,
         color: "text-amber-500",
         bg: "bg-amber-500/10",
@@ -56,6 +56,15 @@ const TYPE_CONFIG = {
     },
     code_ai_detection: {
         label: "AI Detection",
+        icon: Bot,
+        color: "text-indigo-500",
+        bg: "bg-indigo-500/10",
+        border: "border-indigo-500/20",
+        badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+        scoreScale: 100,
+    },
+    pdf_analysis: {
+        label: "PDF Analysis",
         icon: Bot,
         color: "text-indigo-500",
         bg: "bg-indigo-500/10",

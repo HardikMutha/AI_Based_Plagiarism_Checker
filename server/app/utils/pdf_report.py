@@ -386,7 +386,7 @@ REPORT_TEMPLATE = """
             margin-bottom: 14px;
         }
 
-        /* ── Meta grid — use flexbox, not table ── */
+        /* ── Meta grid  use flexbox, not table ── */
         .meta-row { display: flex; flex-wrap: wrap; gap: 0 28px; }
         .meta-col { min-width: 100px; }
         .meta-label { color: #64748b; font-size: 0.72rem; margin-bottom: 2px; }
@@ -504,6 +504,28 @@ REPORT_TEMPLATE = """
         .chunk-side:first-child { border-right: 1px solid rgba(226,232,240,.5); }
         .chunk-bg-red   { background: rgba(239,68,68,.04); }
         .chunk-bg-amber { background: rgba(245,158,11,.03); }
+
+        /* ── PDF Analysis ── */
+        .pdf-overview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .pdf-file-card { flex: 1; min-width: 200px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+        .pdf-img-container { display: flex; gap: 12px; margin-top: 12px; }
+        .pdf-img-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #f8fafc; text-align: center; overflow-x: auto; }
+        .pdf-img-box img { max-width: 100%; max-height: 200px; object-fit: contain; }
+        .pdf-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; margin-top: 6px; }
+        .pdf-table th { border-bottom: 1px solid #e2e8f0; padding: 6px; background: #f1f5f9; text-align: left; }
+        .pdf-table td { border-bottom: 1px solid #f1f5f9; padding: 6px; }
+
+        /* ── Web Sources ── */
+        .web-source-card { display: flex; gap: 14px; border: 1px solid rgba(59,130,246,.25); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; background: #ffffff; }
+        .ws-img-box { flex-shrink: 0; width: 100px; height: 100px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 4px; }
+        .ws-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .ws-content { flex: 1; min-width: 0; }
+        .ws-title { font-size: 0.82rem; font-weight: 600; margin: 0 0 4px 0; color: #0f172a; }
+        .ws-meta { font-size: 0.65rem; color: #64748b; margin-bottom: 8px; }
+        .badge-blue { background: rgba(59,130,246,.08); color: #2563eb; border: 1px solid rgba(59,130,246,.25); }
+        .ws-links { margin-top: 10px; }
+        .ws-link-item { display: block; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; margin-bottom: 4px; text-decoration: none; color: #0f172a; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ws-search-link { display: inline-block; margin-top: 6px; font-size: 0.68rem; color: #64748b; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -601,7 +623,7 @@ REPORT_TEMPLATE = """
     {% endif %}
 
     <!-- ── Comparison Results ── -->
-    {% if not isAIDetection and results and results|length > 0 %}
+    {% if not isAIDetection and type != 'pdf_analysis' and results and results|length > 0 %}
     <div class='section-title'>Comparison Results</div>
 
     {% for r in results %}
@@ -688,6 +710,207 @@ REPORT_TEMPLATE = """
 
         </div>
     {% endfor %}
+    {% endif %}
+
+    <!-- ── PDF Analysis Results ── -->
+    {% if type == 'pdf_analysis' and results %}
+    <div class="card">
+        <div class="comp-header" style="margin-bottom: 0;">
+            <div class="comp-title-area">
+                <p class="comp-title" style="font-size: 1rem;">Comparison Complete</p>
+                <div style="color:#64748b;font-size:0.75rem;">{{ results.total_files }} PDFs compared ({{ results.total_comparisons }} pairwise)</div>
+            </div>
+            <div class="comp-score-area" style="display:flex; gap:6px; align-items:center;">
+                {% if results.total_image_matches > 0 %}
+                <span class="badge badge-red">{{ results.total_image_matches }} image match{% if results.total_image_matches != 1 %}es{% endif %}</span>
+                {% else %}
+                <span class="badge badge-outline">0 image matches</span>
+                {% endif %}
+                {% if results.total_table_matches > 0 %}
+                <span class="badge badge-amber">{{ results.total_table_matches }} table match{% if results.total_table_matches != 1 %}es{% endif %}</span>
+                {% else %}
+                <span class="badge badge-outline">0 table matches</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-File Overview -->
+    <div class="section-title">Per-File Overview</div>
+    <div class="pdf-overview-grid">
+        {% for f in results.files %}
+        <div class="pdf-file-card">
+            <div style="font-weight:600; font-size:0.8rem; margin-bottom:4px; word-break:break-all;">{{ f.file }}</div>
+            <div style="color:#64748b; font-size:0.65rem;">{{ f.total_images }} image{% if f.total_images != 1 %}s{% endif %} &middot; {{ f.total_tables }} table{% if f.total_tables != 1 %}s{% endif %}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if results.image_matches and results.image_matches|length > 0 %}
+    <div class="section-title" style="margin-top: 24px;">Image Matches ({{ results.total_image_matches }})</div>
+    {% for match in results.image_matches %}
+        {% set pct = (match.similarity * 100)|round(0)|int %}
+        {% set sev = 'red' if pct >= 80 else ('amber' if pct >= 68 else 'green') %}
+        <div class="comp-card border-{{ sev }}">
+            <div class="comp-header">
+                <div class="comp-title-area">
+                    <p class="comp-title">{{ match.file_a }} <span class="vs">vs</span> {{ match.file_b }}</p>
+                    <div style="margin-top:2px; margin-bottom:8px;">
+                        <span class="badge-outline">Page {{ match.page_a }}</span>
+                        <span style="color:#94a3b8;font-size:0.7rem;margin:0 3px;">/</span>
+                        <span class="badge-outline">Page {{ match.page_b }}</span>
+                    </div>
+                    {% set mtype = "EMBEDDED IN SCREENSHOT" if match.match_type == "contained_in" else ("PAGE SCREENSHOT" if match.match_type == "page_screenshot" else ("IDENTICAL / COPY" if pct >= 90 else ("LIKELY SCREENSHOT" if pct >= 75 else "SIMILAR IMAGE"))) %}
+                    <span class="badge badge-{{ sev }}">{{ mtype }}</span>
+                </div>
+                <div class="comp-score-area">
+                    <div style="display:flex; align-items:center;">
+                        <div class="comp-score-bar" style="width: 70px; margin-right:8px;">
+                            <div class="signal-progress-bg" style="height: 7px;">
+                                <div class="progress-bar {{ sev }}" style="width: {{ [pct, 100]|min }}%;"></div>
+                            </div>
+                        </div>
+                        <span class="comp-score-val text-{{ sev }}">{{ pct }}<span>%</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pdf-img-container">
+                <div class="pdf-img-box">
+                    <div style="font-family:'Roboto Mono',monospace; font-size:0.65rem; color:#64748b; margin-bottom:6px;">{{ match.file_a }} &mdash; p.{{ match.page_a }}</div>
+                    <div><img src="{{ match.data_a }}" /></div>
+                    <div style="font-size:0.6rem; color:#64748b; margin-top:4px;">{{ match.width_a }}&times;{{ match.height_a }}px</div>
+                </div>
+                <div class="pdf-img-box">
+                    <div style="font-family:'Roboto Mono',monospace; font-size:0.65rem; color:#64748b; margin-bottom:6px;">{{ match.file_b }} &mdash; p.{{ match.page_b }}</div>
+                    <div><img src="{{ match.data_b }}" /></div>
+                    <div style="font-size:0.6rem; color:#64748b; margin-top:4px;">{{ match.width_b }}&times;{{ match.height_b }}px</div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if results.table_matches and results.table_matches|length > 0 %}
+    <div class="section-title" style="margin-top: 24px;">Table Matches ({{ results.total_table_matches }})</div>
+    {% for match in results.table_matches %}
+        {% set pct = ((match.similarity or 1) * 100)|round(0)|int %}
+        {% set sev = 'red' if pct >= 80 else ('amber' if pct >= 68 else 'green') %}
+        {% set mtype = "IDENTICAL TABLE" if match.match_type == "identical" else ("ROW SUBSET" if match.match_type == "subset" else ("COLUMN SUBSET" if match.match_type == "column_subset" else "SIMILAR TABLE")) %}
+        <div class="comp-card border-{{ sev }}">
+            <div class="comp-header">
+                <div class="comp-title-area">
+                    <p class="comp-title">{{ match.file_a }} <span class="vs">vs</span> {{ match.file_b }}</p>
+                    <div style="margin-top:2px; margin-bottom:8px;">
+                        <span class="badge-outline">Page {{ match.page_a }}</span>
+                        <span style="color:#94a3b8;font-size:0.7rem;margin:0 3px;">/</span>
+                        <span class="badge-outline">Page {{ match.page_b }}</span>
+                    </div>
+                    <span class="badge badge-{{ sev }}">{{ mtype }}</span>
+                </div>
+                <div class="comp-score-area">
+                    <div style="display:flex; align-items:center;">
+                        {% if pct < 100 %}
+                        <div class="comp-score-bar" style="width: 70px; margin-right:8px;">
+                            <div class="signal-progress-bg" style="height: 7px;">
+                                <div class="progress-bar {{ sev }}" style="width: {{ [pct, 100]|min }}%;"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <span class="comp-score-val text-{{ sev }}">{{ pct }}<span>%</span></span>
+                    </div>
+                </div>
+            </div>
+
+            {% set tblA = match.table_a %}
+            {% set tblB = match.table_b or match.table_a %}
+            {% set show_side_by_side = match.match_type and match.match_type != "identical" %}
+
+            <div class="pdf-img-container">
+                <div class="pdf-img-box" style="text-align:left;">
+                    {% if show_side_by_side %}<div style="font-family:'Roboto Mono',monospace; font-size:0.65rem; color:#64748b; margin-bottom:6px;">{{ match.file_a }} &mdash; p.{{ match.page_a }}</div>{% endif %}
+                    <table class="pdf-table">
+                        {% if tblA.headers and tblA.headers|length > 0 %}
+                        <thead><tr>{% for h in tblA.headers %}<th>{{ h or '—' }}</th>{% endfor %}</tr></thead>
+                        {% endif %}
+                        <tbody>
+                            {% for row in tblA.rows[:6] %}
+                            <tr style="background: {{ loop.cycle('', '#f8fafc') }};">
+                                {% for cell in row %}<td>{{ cell or '—' }}</td>{% endfor %}
+                            </tr>
+                            {% endfor %}
+                            {% if tblA.rows|length > 6 %}
+                            <tr><td colspan="{{ tblA.headers|length }}" style="text-align:center; color:#94a3b8;">… {{ tblA.rows|length - 6 }} more rows</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if show_side_by_side %}
+                <div class="pdf-img-box" style="text-align:left;">
+                    <div style="font-family:'Roboto Mono',monospace; font-size:0.65rem; color:#64748b; margin-bottom:6px;">{{ match.file_b }} &mdash; p.{{ match.page_b }}</div>
+                    <table class="pdf-table">
+                        {% if tblB.headers and tblB.headers|length > 0 %}
+                        <thead><tr>{% for h in tblB.headers %}<th>{{ h or '—' }}</th>{% endfor %}</tr></thead>
+                        {% endif %}
+                        <tbody>
+                            {% for row in tblB.rows[:6] %}
+                            <tr style="background: {{ loop.cycle('', '#f8fafc') }};">
+                                {% for cell in row %}<td>{{ cell or '—' }}</td>{% endfor %}
+                            </tr>
+                            {% endfor %}
+                            {% if tblB.rows|length > 6 %}
+                            <tr><td colspan="{{ tblB.headers|length }}" style="text-align:center; color:#94a3b8;">… {{ tblB.rows|length - 6 }} more rows</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    {% endfor %}
+    {% endif %}
+
+    {% set ns = namespace(has_web_sources=false) %}
+    {% for f in results.files %}
+        {% for img in (f.images or []) %}
+            {% if img.web_sources and img.web_sources|length > 0 %}
+                {% set ns.has_web_sources = true %}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+
+    {% if ns.has_web_sources %}
+    <div class="section-title" style="margin-top: 24px;">Web Sources</div>
+    {% for f in results.files %}
+        {% for img in (f.images or []) %}
+            {% if img.web_sources and img.web_sources|length > 0 %}
+            <div class="web-source-card">
+                <div class="ws-img-box">
+                    <img src="{{ img.data }}" />
+                </div>
+                <div class="ws-content">
+                    <p class="ws-title">{{ f.file }}</p>
+                    <p class="ws-meta">Page {{ img.page }} &middot; {{ img.width }}&times;{{ img.height }}px</p>
+                    <span class="badge badge-blue">
+                        {{ img.web_sources|length }} SOURCE{% if img.web_sources|length != 1 %}S{% endif %} FOUND
+                    </span>
+                    <div class="ws-links">
+                        {% for src in img.web_sources %}
+                        <a href="{{ src.url }}" class="ws-link-item">{{ src.title }}</a>
+                        {% endfor %}
+                    </div>
+                    {% if img.search_url %}
+                    <a href="{{ img.search_url }}" class="ws-search-link">Open full Google Lens results &rarr;</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+    {% endif %}
+
     {% endif %}
 
     {% if not isAIDetection and (not results or results|length == 0) %}

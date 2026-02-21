@@ -93,8 +93,8 @@ def predict():
     Accept a file upload and return AI-text-detection results.
 
     Expects multipart/form-data with:
-        file  — .txt, .pdf, or .docx file
-        prompt (optional) — the original assignment prompt (improves detection)
+        file   .txt, .pdf, or .docx file
+        prompt (optional)  the original assignment prompt (improves detection)
 
     Returns JSON:
         { score, verdict, layer_details }

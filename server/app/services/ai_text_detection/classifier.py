@@ -1,6 +1,6 @@
 #type:ignore
 """
-Layer 2 — XGBoost inference wrapper.
+Layer 2  XGBoost inference wrapper.
 
 Loads the trained model + scaler once and exposes a lightweight
 predict() function.  No GPU required.

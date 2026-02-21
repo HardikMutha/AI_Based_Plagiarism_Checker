@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, jsonify, send_file, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson import ObjectId
@@ -6,6 +7,19 @@ from app.utils.pdf_report import generate_pdf_report
 import io
 
 report_bp = Blueprint("reports", __name__)
+
+
+def _serialize(doc):
+    """Recursively convert ObjectId and datetime fields to strings."""
+    if isinstance(doc, dict):
+        return {k: _serialize(v) for k, v in doc.items()}
+    elif isinstance(doc, list):
+        return [_serialize(item) for item in doc]
+    elif isinstance(doc, ObjectId):
+        return str(doc)
+    elif isinstance(doc, datetime):
+        return doc.isoformat()
+    return doc
 @report_bp.route("/api/reports/<report_id>/pdf", methods=["GET"])
 @jwt_required()
 def download_report_pdf(report_id):
@@ -24,10 +38,11 @@ def download_report_pdf(report_id):
     data = report.get("report", {})
     type = data.get("type", "unknown")
     TYPE_CONFIG = {
-        "ast_comparison": {"label": "Code — AST", "scoreScale": 100},
-        "min_hash": {"label": "Text — MinHash", "scoreScale": 1},
-        "semantic_similarity": {"label": "Text — Semantic", "scoreScale": 1},
+        "ast_comparison": {"label": "Code  AST", "scoreScale": 100},
+        "min_hash": {"label": "Text  MinHash", "scoreScale": 1},
+        "semantic_similarity": {"label": "Text  Semantic", "scoreScale": 1},
         "code_ai_detection": {"label": "AI Detection", "scoreScale": 100},
+        "pdf_analysis": {"label": "PDF Analysis", "scoreScale": 100},
     }
     FALLBACK_CONFIG = {"label": "Report", "scoreScale": 100}
     cfg = TYPE_CONFIG.get(type, FALLBACK_CONFIG)
@@ -64,8 +79,7 @@ def get_user_reports():
 
     result = []
     for r in reports:
-        r["_id"] = str(r["_id"])
-        result.append(r)
+        result.append(_serialize(r))
 
     return jsonify({"reports": result}), 200
 
@@ -87,8 +101,7 @@ def get_single_report(report_id):
     if report.get("user_id") != current_user_id:
         return jsonify({"error": "Unauthorized"}), 403
 
-    report["_id"] = str(report["_id"])
-    return jsonify(report), 200
+    return jsonify(_serialize(report)), 200
 
 
 @report_bp.route("/api/reports/<report_id>", methods=["DELETE"])
