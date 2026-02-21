@@ -173,7 +173,7 @@ const AICheckPage = () => {
       }
 
       setResults(data.results)
-      toast.success(`Analysis complete — ${data.total_files} file${data.total_files !== 1 ? "s" : ""} analyzed.`)
+      toast.success(`Analysis complete  ${data.total_files} file${data.total_files !== 1 ? "s" : ""} analyzed.`)
     } catch (err) {
       setError(err.message)
       toast.error(err.message)
@@ -225,21 +225,19 @@ const AICheckPage = () => {
                 <div className="flex gap-1 mt-2 p-1 bg-muted/50 rounded-lg w-fit">
                   <button
                     onClick={() => switchMode("file")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-                      inputMode === "file"
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${inputMode === "file"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Upload className="h-3.5 w-3.5" /> Upload Files
                   </button>
                   <button
                     onClick={() => switchMode("editor")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-                      inputMode === "editor"
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${inputMode === "editor"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Type className="h-3.5 w-3.5" /> Paste Code
                   </button>
@@ -277,7 +275,7 @@ const AICheckPage = () => {
                           {dragOver ? "Drop files here" : "Click or drag code files here"}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Supports {SUPPORTED_EXTENSIONS.join(", ")} — multiple files will be zipped automatically
+                          Supports {SUPPORTED_EXTENSIONS.join(", ")}  multiple files will be zipped automatically
                         </p>
                       </div>
                       <input
@@ -472,13 +470,13 @@ function generateConclusions(result) {
 
   // ── Structural conclusions ──────────────────────────────────
   if (s.depth_uniformity >= 0.7 && s.subtree_symmetry >= 0.6) {
-    add("high", "The code's AST is unusually uniform — function bodies, conditional branches, and loops are all structured at similar depths with symmetric subtrees. This level of structural regularity is a strong indicator of machine-generated code.")
+    add("high", "The code's AST is unusually uniform  function bodies, conditional branches, and loops are all structured at similar depths with symmetric subtrees. This level of structural regularity is a strong indicator of machine-generated code.")
   } else if (s.depth_uniformity >= 0.6) {
     add("medium", "The AST depth uniformity is moderately high, suggesting the code might follow rigid templates. Human code typically shows more varied nesting patterns.")
   }
 
   if (s.func_size_uniformity >= 0.7) {
-    add("high", "All functions in this file are suspiciously close in size — a hallmark of AI generators that produce cookie-cutter function bodies with consistent structure.")
+    add("high", "All functions in this file are suspiciously close in size  a hallmark of AI generators that produce cookie-cutter function bodies with consistent structure.")
   } else if (s.func_size_uniformity >= 0.5) {
     add("medium", "Functions are fairly uniform in size. While not conclusive, this pattern is more common in AI-generated code than in hand-written code where function complexity naturally varies.")
   }
@@ -501,7 +499,7 @@ function generateConclusions(result) {
 
   // ── Textual conclusions ─────────────────────────────────────
   if (s.comment_pattern >= 0.6) {
-    add("high", "Comments match typical AI phrasing patterns — expressions like \"this function\", \"helper method\", \"handle the error\", and \"return the result\" appear frequently. These formulaic comments are a strong textual indicator.")
+    add("high", "Comments match typical AI phrasing patterns  expressions like \"this function\", \"helper method\", \"handle the error\", and \"return the result\" appear frequently. These formulaic comments are a strong textual indicator.")
   } else if (s.comment_pattern >= 0.4) {
     add("medium", "Some comments use phrasing commonly associated with AI assistants, though not enough to be conclusive on their own.")
   }
@@ -515,7 +513,7 @@ function generateConclusions(result) {
   }
 
   if (s.import_style >= 0.7) {
-    add("medium", "Imports are perfectly organized — alphabetized, grouped by category, with clean separation. This level of import hygiene is typical of AI-generated Python code.")
+    add("medium", "Imports are perfectly organized  alphabetized, grouped by category, with clean separation. This level of import hygiene is typical of AI-generated Python code.")
   }
 
   if (s.line_length_uniformity >= 0.7) {
@@ -527,7 +525,7 @@ function generateConclusions(result) {
   }
 
   if (s.variable_name_entropy >= 0.65) {
-    add("low", "Variable names show low lexical entropy — the same word components (e.g. \"data\", \"result\", \"value\") are reused throughout, which is a subtle pattern in AI-generated code.")
+    add("low", "Variable names show low lexical entropy  the same word components (e.g. \"data\", \"result\", \"value\") are reused throughout, which is a subtle pattern in AI-generated code.")
   }
 
   if (s.f_string_consistency >= 0.7) {
@@ -535,11 +533,11 @@ function generateConclusions(result) {
   }
 
   if (s.emoji_usage >= 0.5) {
-    add("high", "The code contains emoji characters in comments or strings — a notable AI signature, especially from conversational AI assistants.")
+    add("high", "The code contains emoji characters in comments or strings  a notable AI signature, especially from conversational AI assistants.")
   }
 
   if (s.em_dash_usage >= 0.5) {
-    add("high", "Em-dashes (—) were found in comments or strings. This Unicode punctuation is extremely common in AI-generated text but rare in human-written code.")
+    add("high", "Em-dashes () were found in comments or strings. This Unicode punctuation is extremely common in AI-generated text but rare in human-written code.")
   }
 
   // ── Overall summary ─────────────────────────────────────────
@@ -550,7 +548,7 @@ function generateConclusions(result) {
   if (prob >= 0.7) {
     summary = `This code exhibits ${highCount} strong and ${medCount} moderate AI indicators across both structural and textual analysis. The combination of these signals strongly suggests the code was generated by an AI assistant.`
   } else if (prob >= 0.4) {
-    summary = `The analysis detected ${highCount + medCount} notable signals. While some patterns align with AI generation, the evidence is not conclusive — the code may be human-written with some AI assistance, or written by a developer following strict coding conventions.`
+    summary = `The analysis detected ${highCount + medCount} notable signals. While some patterns align with AI generation, the evidence is not conclusive  the code may be human-written with some AI assistance, or written by a developer following strict coding conventions.`
   } else {
     if (conclusions.length === 0) {
       summary = "No significant AI generation indicators were detected. The code structure, naming patterns, and comment style are all consistent with human-authored code."

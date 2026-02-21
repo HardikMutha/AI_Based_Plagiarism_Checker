@@ -1,5 +1,5 @@
 """
-Layer 1 — NLP "Texture" Feature Extraction
+Layer 1  NLP "Texture" Feature Extraction
 
 Extracts 20 numerical features from raw text using pure NLP heuristics
 and curated AI marker word lists (from config.py).
@@ -186,7 +186,7 @@ def _vocabulary_features(words: list[str]) -> dict:
 
 
 def _formatting_features(text: str) -> dict:
-    """Detect markdown formatting — AI outputs are heavy on headers, bullets, bold, code fences."""
+    """Detect markdown formatting  AI outputs are heavy on headers, bullets, bold, code fences."""
     lines = text.split("\n")
     non_empty = [ln for ln in lines if ln.strip()]
     total_lines = max(len(non_empty), 1)

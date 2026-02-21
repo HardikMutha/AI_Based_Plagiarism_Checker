@@ -1,4 +1,4 @@
-"""C++ AST Parser — regex-based structural extraction."""
+"""C++ AST Parser  regex-based structural extraction."""
 
 from __future__ import annotations
 

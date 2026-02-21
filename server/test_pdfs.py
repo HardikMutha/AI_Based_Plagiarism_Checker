@@ -26,7 +26,7 @@ def run_tests():
     
     # 2. AST Comparison
     ast_data = {
-        "cfg": {"label": "Code — AST"},
+        "cfg": {"label": "Code  AST"},
         "report": {"_id": "test_ast_123", "created_at": "2026-02-21T10:00:00.000Z"},
         "data": {"total_files": 2, "total_comparisons": 1},
         "type": "ast_comparison",
@@ -48,7 +48,7 @@ def run_tests():
 
     # 3. Semantic Similarity
     sem_data = {
-        "cfg": {"label": "Text — Semantic"},
+        "cfg": {"label": "Text  Semantic"},
         "report": {"_id": "test_sem_123", "created_at": "2026-02-21T10:00:00.000Z"},
         "data": {"total_files": 2, "total_comparisons": 1},
         "type": "semantic_similarity",
@@ -68,7 +68,7 @@ def run_tests():
     
     # 4. MinHash
     min_data = {
-        "cfg": {"label": "Text — MinHash"},
+        "cfg": {"label": "Text  MinHash"},
         "report": {"_id": "test_min_123", "created_at": "2026-02-21T10:00:00.000Z"},
         "data": {"total_files": 2, "total_comparisons": 1},
         "type": "min_hash",

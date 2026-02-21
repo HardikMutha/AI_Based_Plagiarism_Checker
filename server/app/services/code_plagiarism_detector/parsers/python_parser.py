@@ -1,4 +1,4 @@
-"""Python AST Parser — uses the built-in `ast` module."""
+"""Python AST Parser  uses the built-in `ast` module."""
 
 from __future__ import annotations
 

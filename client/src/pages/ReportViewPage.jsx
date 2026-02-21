@@ -11,9 +11,9 @@ import { SemanticReport } from "@/components/reports/SemanticReport"
 import { PDFReport } from "@/components/reports/PDFReport"
 
 const TYPE_CONFIG = {
-    ast_comparison: { label: "Code — AST", icon: FileCode, scoreScale: 100 },
-    min_hash: { label: "Text — MinHash", icon: FileText, scoreScale: 1 },
-    semantic_similarity: { label: "Text — Semantic", icon: Sparkles, scoreScale: 1 },
+    ast_comparison: { label: "Code  AST", icon: FileCode, scoreScale: 100 },
+    min_hash: { label: "Text  MinHash", icon: FileText, scoreScale: 1 },
+    semantic_similarity: { label: "Text  Semantic", icon: Sparkles, scoreScale: 1 },
     code_ai_detection: { label: "AI Detection", icon: Bot, scoreScale: 100 },
 }
 const FALLBACK_CONFIG = { label: "Report", icon: Files, scoreScale: 100 }

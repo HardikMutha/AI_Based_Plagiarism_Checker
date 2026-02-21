@@ -4,11 +4,11 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
-import { 
-  NavigationMenu, 
-  NavigationMenuItem, 
-  NavigationMenuList, 
-  NavigationMenuLink 
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuLink
 } from '../components/ui/navigation-menu';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,7 +35,7 @@ const LandingPage = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { scrollYProgress } = useScroll();
-  
+
   const headerBgLight = useTransform(scrollYProgress, [0, 0.1], ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.98)']);
   const headerBgDark = useTransform(scrollYProgress, [0, 0.1], ['rgba(9, 9, 11, 0)', 'rgba(9, 9, 11, 0.98)']);
   const headerBg = isDarkMode ? headerBgDark : headerBgLight;
@@ -99,19 +99,18 @@ const LandingPage = () => {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-zinc-950' : 'bg-zinc-50'}`}>
-      
+
       <div className="font-serif text-zinc-900 dark:text-zinc-50 tracking-wide">
-        
-        
-        <motion.nav 
+
+
+        <motion.nav
           style={{ backgroundColor: headerBg }}
-          className={`fixed w-full z-50 transition-all duration-300 border-b border-transparent ${
-            isScrolled ? 'border-zinc-200 dark:border-zinc-800 shadow-sm backdrop-blur-md' : ''
-          }`}
+          className={`fixed w-full z-50 transition-all duration-300 border-b border-transparent ${isScrolled ? 'border-zinc-200 dark:border-zinc-800 shadow-sm backdrop-blur-md' : ''
+            }`}
         >
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
@@ -122,7 +121,7 @@ const LandingPage = () => {
                   Plagiarism Checker
                 </Badge>
               </motion.div>
-              
+
               <NavigationMenu className="hidden md:flex">
                 <NavigationMenuList>
                   {['Features', 'How It Works', 'Pricing', 'Contact'].map((item, index) => (
@@ -142,27 +141,27 @@ const LandingPage = () => {
                 </NavigationMenuList>
               </NavigationMenu>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
                 className="flex items-center space-x-4"
               >
-                <button 
+                <button
                   onClick={() => setIsDarkMode(!isDarkMode)}
                   className="p-2 rounded-full text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:text-zinc-400 transition-colors"
                   aria-label="Toggle theme"
                 >
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-                <Button 
+                <Button
                   onClick={() => navigate('/login')}
-                  variant="ghost" 
+                  variant="ghost"
                   className="text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 hidden sm:inline-flex"
                 >
                   Log In
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/login')}
                   className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 shadow-md transition-all"
                 >
@@ -174,7 +173,7 @@ const LandingPage = () => {
           </div>
         </motion.nav>
 
-        
+
         <section ref={heroRef} className="pt-40 pb-20 px-4 overflow-hidden bg-white dark:bg-zinc-950 transition-colors duration-300">
           <div className="container mx-auto text-center">
             <motion.div
@@ -186,8 +185,8 @@ const LandingPage = () => {
                 AI-Powered Academic Integrity
               </Badge>
             </motion.div>
-            
-            <motion.h1 
+
+            <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.1 }}
@@ -195,26 +194,26 @@ const LandingPage = () => {
             >
               Plagiarism & Authenticity Checker for Assignments
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-xl text-zinc-500 dark:text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed"
             >
-              Advanced AI-based tool that checks assignment submissions for plagiarism, paraphrased content, 
-              and originality — including code assignments.
+              Advanced AI-based tool that checks assignment submissions for plagiarism, paraphrased content,
+              and originality  including code assignments.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.7, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
             >
-              <Button 
+              <Button
                 onClick={() => navigate('/login')}
-                size="lg" 
+                size="lg"
                 className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 px-8 h-14 text-base shadow-lg group"
               >
                 Get Started
@@ -225,8 +224,8 @@ const LandingPage = () => {
               </Button>
             </motion.div>
 
-            
-            <motion.div 
+
+            <motion.div
               ref={statsRef}
               variants={staggerContainer}
               initial="hidden"
@@ -249,10 +248,10 @@ const LandingPage = () => {
           </div>
         </section>
 
-        
+
         <section ref={featuresRef} className="py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300">
           <div className="container mx-auto px-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={featuresInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6 }}
@@ -266,7 +265,7 @@ const LandingPage = () => {
               </p>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate={featuresInView ? "visible" : "hidden"}
@@ -296,10 +295,10 @@ const LandingPage = () => {
           </div>
         </section>
 
-        
+
         <section ref={stepsRef} className="py-24 bg-white dark:bg-zinc-950 transition-colors duration-300">
           <div className="container mx-auto px-4 max-w-7xl">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={stepsInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6 }}
@@ -324,7 +323,7 @@ const LandingPage = () => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     className="relative group p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-white dark:hover:bg-zinc-800/50 hover:shadow-xl hover:border-zinc-200 dark:hover:border-zinc-700 transition-all duration-300 overflow-hidden"
                   >
-                    <motion.div 
+                    <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       whileInView={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", stiffness: 100, delay: index * 0.2 }}
@@ -347,8 +346,8 @@ const LandingPage = () => {
           </div>
         </section>
 
-        
-        <motion.section 
+
+        <motion.section
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -356,9 +355,9 @@ const LandingPage = () => {
           className="py-24 bg-zinc-950 dark:bg-black text-white relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
-          
+
           <div className="container mx-auto px-4 text-center relative z-10">
-            <motion.h2 
+            <motion.h2
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6 }}
@@ -367,8 +366,8 @@ const LandingPage = () => {
             >
               Seamless LMS Integration
             </motion.h2>
-            
-            <motion.p 
+
+            <motion.p
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -377,8 +376,8 @@ const LandingPage = () => {
             >
               Integrate effortlessly with popular learning management systems for automated checking.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               variants={staggerContainer}
               initial="hidden"
               whileInView="visible"
@@ -395,7 +394,7 @@ const LandingPage = () => {
                 </motion.div>
               ))}
             </motion.div>
-            
+
             <Button size="lg" variant="outline" className="bg-transparent border-zinc-700 text-zinc-300 hover:bg-white hover:text-black transition-colors h-14 px-8">
               Learn About Integration
               <ChevronRight className="ml-2 h-4 w-4" />
@@ -403,7 +402,7 @@ const LandingPage = () => {
           </div>
         </motion.section>
 
-        
+
         <section className="py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300">
           <div className="container mx-auto px-4 max-w-5xl">
             <motion.div
@@ -414,7 +413,7 @@ const LandingPage = () => {
             >
               <Card className="bg-zinc-950 dark:bg-zinc-900 text-white border border-transparent dark:border-zinc-800 shadow-2xl overflow-hidden relative rounded-3xl">
                 <CardContent className="relative py-20 px-8 text-center">
-                  <motion.h2 
+                  <motion.h2
                     initial={{ y: 20, opacity: 0 }}
                     whileInView={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
@@ -423,8 +422,8 @@ const LandingPage = () => {
                   >
                     Start Ensuring Academic Integrity Today
                   </motion.h2>
-                  
-                  <motion.p 
+
+                  <motion.p
                     initial={{ y: 20, opacity: 0 }}
                     whileInView={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
@@ -433,20 +432,20 @@ const LandingPage = () => {
                   >
                     Join thousands of educational institutions using our platform to maintain absolute academic standards.
                   </motion.p>
-                  
-                  <motion.div 
+
+                  <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     whileInView={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                     viewport={{ once: true }}
                     className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto"
                   >
-                    <Input 
-                      type="email" 
-                      placeholder="Enter your work email" 
+                    <Input
+                      type="email"
+                      placeholder="Enter your work email"
                       className="bg-zinc-900 dark:bg-zinc-950 border-zinc-800 dark:border-zinc-700 text-white placeholder:text-zinc-500 h-12 focus-visible:ring-1 focus-visible:ring-zinc-700"
                     />
-                    <Button 
+                    <Button
                       onClick={() => navigate('/login')}
                       className="bg-white text-black hover:bg-zinc-200 h-12 px-8 whitespace-nowrap w-full sm:w-auto font-semibold"
                     >
@@ -460,7 +459,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        
+
         <footer className="bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
           <div className="container mx-auto px-4 py-16 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -478,7 +477,7 @@ const LandingPage = () => {
                   Advanced plagiarism detection and structural code analysis for modern educational institutions.
                 </p>
               </motion.div>
-              
+
               {['Product', 'Resources', 'Legal'].map((section, idx) => (
                 <motion.div
                   key={section}
@@ -508,8 +507,8 @@ const LandingPage = () => {
                 </motion.div>
               ))}
             </div>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.3 }}

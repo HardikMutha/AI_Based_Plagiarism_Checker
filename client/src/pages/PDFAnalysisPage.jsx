@@ -183,7 +183,7 @@ const PDFAnalysisPage = () => {
 
       setResults(result)
       const totalMatches = (result.total_image_matches || 0) + (result.total_table_matches || 0)
-      toast.success(`Scan complete — ${totalMatches} match${totalMatches !== 1 ? "es" : ""} found across ${result.total_files} PDFs.`)
+      toast.success(`Scan complete  ${totalMatches} match${totalMatches !== 1 ? "es" : ""} found across ${result.total_files} PDFs.`)
     } catch (err) {
       setError(err.message)
       toast.error(err.message)

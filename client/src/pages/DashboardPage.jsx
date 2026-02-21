@@ -21,6 +21,8 @@ import {
   Clock,
   BarChart3,
   Activity,
+  GraduationCap,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -41,7 +43,7 @@ import { toast } from "sonner";
 // ── Type config (matches ReportHistoryPage) ─────────────────────
 const TYPE_CONFIG = {
   ast_comparison: {
-    label: "Code — AST",
+    label: "Code  AST",
     shortLabel: "AST",
     icon: FileCode,
     color: "text-violet-500",
@@ -51,7 +53,7 @@ const TYPE_CONFIG = {
     scoreScale: 100,
   },
   min_hash: {
-    label: "Text — MinHash",
+    label: "Text  MinHash",
     shortLabel: "MinHash",
     icon: FileText,
     color: "text-sky-500",
@@ -61,7 +63,7 @@ const TYPE_CONFIG = {
     scoreScale: 1,
   },
   semantic_similarity: {
-    label: "Text — Semantic",
+    label: "Text  Semantic",
     shortLabel: "Semantic",
     icon: Sparkles,
     color: "text-amber-500",
@@ -208,26 +210,33 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchAll = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/api/reports", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error("Failed to load reports");
-        const data = await res.json();
-        setReports(data.reports || []);
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const [repRes, asgRes] = await Promise.all([
+          fetch("/api/reports", { headers }),
+          fetch("/api/assignments", { headers }),
+        ]);
+        if (repRes.ok) {
+          const d = await repRes.json();
+          setReports(d.reports || []);
+        }
+        if (asgRes.ok) {
+          const d = await asgRes.json();
+          setAssignments(d.assignments || []);
+        }
       } catch (err) {
         console.error(err);
-        // Silently fail — dashboard still shows quick actions
       } finally {
         setLoading(false);
       }
     };
-    fetchReports();
+    fetchAll();
   }, []);
 
   // ── Compute stats from real data ──────────────────────────────
@@ -362,7 +371,7 @@ const DashboardPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {allScores.length > 0 ? `${avgSimilarity.toFixed(1)}%` : "—"}
+                    {allScores.length > 0 ? `${avgSimilarity.toFixed(1)}%` : ""}
                   </div>
                   <p className="text-xs text-amber-600 mt-1">
                     Across {allScores.length} scored report{allScores.length !== 1 ? "s" : ""}
@@ -378,7 +387,7 @@ const DashboardPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {avgAIProb !== null ? `${avgAIProb.toFixed(1)}%` : "—"}
+                    {avgAIProb !== null ? `${avgAIProb.toFixed(1)}%` : ""}
                   </div>
                   <p className="text-xs text-indigo-600 mt-1">
                     {aiDetectionReports > 0
@@ -415,6 +424,14 @@ const DashboardPage = () => {
               Quick Actions
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <QuickActionCard
+                icon={GraduationCap}
+                title="Create Assignment"
+                description="Organize submissions and run scans"
+                to="/assignments"
+                color="text-emerald-500"
+                bg="bg-emerald-500/10"
+              />
               <QuickActionCard
                 icon={Files}
                 title="Compare Files"
@@ -528,8 +545,8 @@ const DashboardPage = () => {
                               <div className="text-right shrink-0">
                                 <p
                                   className={`text-lg font-bold font-mono tabular-nums ${maxScore >= 70
-                                      ? "text-red-600 dark:text-red-400"
-                                      : "text-amber-600 dark:text-amber-400"
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-amber-600 dark:text-amber-400"
                                     }`}
                                 >
                                   {maxScore.toFixed(1)}%
@@ -609,10 +626,10 @@ const DashboardPage = () => {
                                 {maxScore > 0 && (
                                   <span
                                     className={`text-sm font-bold font-mono tabular-nums ${maxScore >= 70
-                                        ? "text-red-600 dark:text-red-400"
-                                        : maxScore >= 50
-                                          ? "text-amber-600 dark:text-amber-400"
-                                          : "text-green-600 dark:text-green-400"
+                                      ? "text-red-600 dark:text-red-400"
+                                      : maxScore >= 50
+                                        ? "text-amber-600 dark:text-amber-400"
+                                        : "text-green-600 dark:text-green-400"
                                       }`}
                                   >
                                     {maxScore.toFixed(1)}%
@@ -633,6 +650,64 @@ const DashboardPage = () => {
                 </Card>
               </motion.div>
             </div>
+          )}
+
+          {/* Recent Assignments */}
+          {!loading && assignments.length > 0 && (
+            <motion.div variants={item}>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-emerald-500" />
+                      Recent Assignments
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-primary"
+                      onClick={() => navigate("/assignments")}
+                    >
+                      View All
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {assignments.slice(0, 4).map((a) => {
+                      const subCount = (a.submissions || []).length;
+                      const scanCount = (a.analyses || []).length;
+                      return (
+                        <div
+                          key={a._id}
+                          className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/30 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/assignments/${a._id}`)}
+                        >
+                          <div className="p-2 rounded-lg bg-emerald-500/10">
+                            <GraduationCap className="h-4 w-4 text-emerald-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{a.title}</p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {subCount} submission{subCount !== 1 ? "s" : ""}
+                              </span>
+                              <span>{scanCount} scan{scanCount !== 1 ? "s" : ""}</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {timeAgo(a.updated_at || a.created_at)}
+                              </span>
+                            </p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           )}
         </motion.div>
       </div>
