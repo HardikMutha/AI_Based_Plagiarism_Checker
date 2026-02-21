@@ -124,8 +124,10 @@ const AICheckPage = () => {
         formData.append("file", blob, filename)
       }
 
+      const token = localStorage.getItem("token")
       const res = await fetch("/api/code/ai_detect", {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       })
       const data = await res.json()

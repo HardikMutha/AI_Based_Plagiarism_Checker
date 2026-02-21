@@ -7,6 +7,7 @@ from app.routes.auth_routes import auth_bp
 from app.routes.code_plag_routes import code_plag_bp
 from app.routes.ai_text_routes import ai_text_bp
 from app.routes.text_plag_routes import text_plag_bp
+from app.routes.report_routes import report_bp
 
 def create_app():
 
@@ -22,6 +23,7 @@ def create_app():
     app.register_blueprint(code_plag_bp)
     app.register_blueprint(ai_text_bp)
     app.register_blueprint(text_plag_bp)
+    app.register_blueprint(report_bp)
 
     @app.route('/')
     def index():
