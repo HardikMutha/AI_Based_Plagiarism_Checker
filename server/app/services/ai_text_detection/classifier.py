@@ -56,8 +56,3 @@ def predict_text(text: str) -> dict:
     """Convenience: extract features then predict in one call."""
     features = feature_extractor.extract(text)
     return predict(features)
-
-if(__name__=="__main__"):
-    text = """"""
-    data = predict_text(text)
-    print(data)
