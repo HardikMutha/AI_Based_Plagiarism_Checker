@@ -31,4 +31,3 @@ venv/
 myenv/
 *.csv
 *.txt
-*.joblib
