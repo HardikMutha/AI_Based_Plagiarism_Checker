@@ -29,3 +29,6 @@ __pycache__/
 **/.venv/
 venv/
 myenv/
+*.csv
+*.txt
+*.joblib
