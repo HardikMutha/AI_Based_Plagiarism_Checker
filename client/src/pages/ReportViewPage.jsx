@@ -97,7 +97,6 @@ const ReportViewPage = () => {
         }
     }
 
-    const handlePrint = () => window.print()
 
     if (loading) {
         return (
@@ -144,10 +143,6 @@ const ReportViewPage = () => {
                         <h1 className="text-xl font-semibold hidden sm:block">Report Details</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={handlePrint} className="gap-2">
-                            <Printer className="h-4 w-4" />
-                            <span className="hidden sm:inline">Print</span>
-                        </Button>
                         <Button onClick={handleDownloadPDF} className="gap-2" disabled={downloading}>
                             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span><svg width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1v10M8 11l3-3M8 11l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><rect x="3" y="13" width="10" height="2" rx="1" fill="currentColor" /></svg></span>}
                             {downloading ? "Downloading…" : "Download PDF"}

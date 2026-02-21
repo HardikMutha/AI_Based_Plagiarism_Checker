@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   ArrowRight,
   ChevronRight,
-  Sparkles,
   Info,
   Trash2,
   Type,
@@ -35,6 +34,8 @@ import { CodeCheckReport } from "@/components/reports/CodeCheckReport"
 import { MinHashReport } from "@/components/reports/MinHashReport"
 import { SemanticReport } from "@/components/reports/SemanticReport"
 
+const Sparkles = FileText
+
 // ── Route config ────────────────────────────────────────────────
 const SCAN_OPTIONS = [
   {
@@ -49,7 +50,7 @@ const SCAN_OPTIONS = [
   },
   {
     value: "text_minhash",
-    label: "Text  MinHash",
+    label: "Local Text Plagiarism",
     description: "Fast approximate duplicate detection using MinHash signatures",
     route: "/api/text/minhash",
     icon: FileText,
@@ -59,7 +60,7 @@ const SCAN_OPTIONS = [
   },
   {
     value: "text_semantic",
-    label: "Text  Semantic",
+    label: "Semantic Text Similarity",
     description: "Deep learning-based semantic similarity comparison",
     route: "/api/text/semantic_similarity",
     icon: Sparkles,

@@ -280,7 +280,7 @@ const AICheckPage = () => {
           {/* Title */}
           <motion.div variants={item}>
             <h2 className="text-3xl font-bold tracking-tight">
-              AI Content Detector
+              AI-Generated Content Detector
             </h2>
             <p className="text-muted-foreground mt-1">
               Detect AI-generated code or text using multi-layer analysis

@@ -38,7 +38,7 @@ const TYPE_CONFIG = {
         scoreScale: 100,
     },
     min_hash: {
-        label: "Text  MinHash",
+        label: "Local Text Plagiarism",
         icon: FileText,
         color: "text-sky-500",
         bg: "bg-sky-500/10",
@@ -47,7 +47,7 @@ const TYPE_CONFIG = {
         scoreScale: 1,
     },
     semantic_similarity: {
-        label: "Text  Semantic",
+        label: "Semantic Text Similarity",
         icon: Sparkles,
         color: "text-amber-500",
         bg: "bg-amber-500/10",
@@ -56,7 +56,7 @@ const TYPE_CONFIG = {
         scoreScale: 1,
     },
     code_ai_detection: {
-        label: "AI Detection",
+        label: "AI Generated Code",
         icon: Bot,
         color: "text-indigo-500",
         bg: "bg-indigo-500/10",
@@ -74,7 +74,7 @@ const TYPE_CONFIG = {
         scoreScale: 100,
     },
     text_ai: {
-        label: "Text AI Detection",
+        label: "AI Generated Text",
         icon: Bot,
         color: "text-green-500",
         bg: "bg-green-500/10",

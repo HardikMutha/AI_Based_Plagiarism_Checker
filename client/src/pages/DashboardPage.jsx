@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   FileCode,
   FileText,
-  Sparkles,
   Files,
   ArrowRight,
   Loader2,
@@ -39,6 +38,8 @@ import { Progress } from "../components/ui/progress";
 import { SidebarTrigger } from "../components/ui/sidebar";
 import { Separator } from "../components/ui/separator";
 import { toast } from "sonner";
+
+const Sparkles = FileText 
 
 // ── Type config (matches ReportHistoryPage) ─────────────────────
 const TYPE_CONFIG = {
