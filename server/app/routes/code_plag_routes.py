@@ -54,6 +54,32 @@ def api_batch_compare():
             return jsonify({"error": str(e)}), 400
 
 
+@code_plag_bp.route("/api/code/ai_detect", methods=["POST"])
+def api_ai_detect():
+    """Detect whether a single uploaded code file is AI-generated."""
+    uploaded = request.files.get("file")
+
+    if not uploaded:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    ext = Path(uploaded.filename).suffix.lower()
+    if ext not in SUPPORTED_CODE_EXTENSIONS:
+        return jsonify({
+            "error": f"Unsupported extension '{ext}'. Supported: {', '.join(sorted(SUPPORTED_CODE_EXTENSIONS))}"
+        }), 400
+
+    with tempfile.TemporaryDirectory() as tmp:
+        file_path = os.path.join(tmp, uploaded.filename)
+        uploaded.save(file_path)
+
+        try:
+            detector = AICodeDetector()
+            result = detector.analyze_file(file_path)
+            return jsonify(result.as_dict())
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+
 @code_plag_bp.route("/languages")
 def api_languages():
     return jsonify({"languages": ParserRegistry.supported_languages()})
