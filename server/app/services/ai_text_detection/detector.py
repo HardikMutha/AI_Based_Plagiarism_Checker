@@ -1,3 +1,4 @@
+#type:ignore
 """
 AI Text Detector  Pipeline
 
@@ -18,6 +19,8 @@ from config import (
     WEIGHT_HEURISTIC,
     WEIGHT_ML,
     WEIGHT_PATTERN,
+    MODEL_PATH,
+    SCALER_PATH
 )
 
 
@@ -102,7 +105,9 @@ def detect(text: str, assignment_prompt: str | None = None) -> dict:
     """
     features = feature_extractor.extract(text)
 
-    ml_result = classifier.predict(features)
+    classifier_model = classifier.AiTextClassifier(MODEL_PATH,SCALER_PATH)
+
+    ml_result = classifier_model.predict(features)
 
     pattern_result = pattern_analyzer.analyze(text, assignment_prompt)
 
