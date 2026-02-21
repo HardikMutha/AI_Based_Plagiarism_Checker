@@ -187,11 +187,22 @@ class MinHashUtils:
                     self.raw_lines[i],
                     self.raw_lines[j]
                 )
+
+                verdict = "LIKELY NOT PLAGIARISED"
+                overall = round(sim, 4)
+                if overall >= 0.40:
+                    verdict = "POSSIBLY PLAGIARISED"
+                elif overall >= 0.75:
+                    verdict = "LIKELY PLAGIARISED"
+                elif overall >= 0.90:
+                    verdict = "ALMOST CERTAINLY PLAGIARISED"
+
                 res = {
                     "file_a": self.filepaths[i],
                     "file_b": self.filepaths[j],
                     "type": "text",
-                    "overall_score": round(sim, 4),
+                    "overall_score": overall,
+                    "verdict": verdict,
                     "similar_lines": similar_lines
                 }
                 ret.append(res)
