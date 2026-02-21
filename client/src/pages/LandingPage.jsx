@@ -10,6 +10,7 @@ import {
   NavigationMenuList, 
   NavigationMenuLink 
 } from '../components/ui/navigation-menu';
+import { useNavigate } from 'react-router-dom';
 
 import {
   FileText,
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -153,10 +155,17 @@ const LandingPage = () => {
                 >
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-                <Button variant="ghost" className="text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 hidden sm:inline-flex">
+                <Button 
+                  onClick={() => navigate('/login')}
+                  variant="ghost" 
+                  className="text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 hidden sm:inline-flex"
+                >
                   Log In
                 </Button>
-                <Button className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 shadow-md transition-all">
+                <Button 
+                  onClick={() => navigate('/login')}
+                  className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 shadow-md transition-all"
+                >
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -203,7 +212,11 @@ const LandingPage = () => {
               transition={{ duration: 0.7, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
             >
-              <Button size="lg" className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 px-8 h-14 text-base shadow-lg group">
+              <Button 
+                onClick={() => navigate('/login')}
+                size="lg" 
+                className="bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 px-8 h-14 text-base shadow-lg group"
+              >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -433,7 +446,10 @@ const LandingPage = () => {
                       placeholder="Enter your work email" 
                       className="bg-zinc-900 dark:bg-zinc-950 border-zinc-800 dark:border-zinc-700 text-white placeholder:text-zinc-500 h-12 focus-visible:ring-1 focus-visible:ring-zinc-700"
                     />
-                    <Button className="bg-white text-black hover:bg-zinc-200 h-12 px-8 whitespace-nowrap w-full sm:w-auto font-semibold">
+                    <Button 
+                      onClick={() => navigate('/login')}
+                      className="bg-white text-black hover:bg-zinc-200 h-12 px-8 whitespace-nowrap w-full sm:w-auto font-semibold"
+                    >
                       Sign Up Now
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

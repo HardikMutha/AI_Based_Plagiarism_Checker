@@ -179,6 +179,9 @@ typing_extensions==4.15.0
 urllib3==2.6.3
 wcwidth==0.6.0
 Werkzeug==3.1.6
+Flask-JWT-Extended==4.7.1
+passlib==1.7.4
+flask-cors==4.0.0
 xgboost==3.2.0
 xxhash==3.6.0
 yarl==1.22.0

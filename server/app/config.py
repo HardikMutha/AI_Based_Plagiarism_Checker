@@ -6,3 +6,4 @@ load_dotenv()
 class Config:
     MONGO_URI = os.getenv("MONGO_URI")
     OPENALEX_EMAIL = os.getenv("OPENALEX_EMAIL")
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-key") # Change this in production!
