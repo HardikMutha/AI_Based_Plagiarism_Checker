@@ -14,6 +14,7 @@ import {
   Sparkles,
   Info,
   Trash2,
+  Type,
 } from "lucide-react"
 import JSZip from "jszip"
 import { toast } from "sonner"
@@ -30,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ComparisonCard } from "@/components/ComparisonCard"
 
 // ── Route config ────────────────────────────────────────────────
 const SCAN_OPTIONS = [
@@ -81,46 +83,26 @@ function getFileIcon(name) {
   return FileText
 }
 
-/** Normalize score to 0–100 percentage */
-function normalizeScore(score, scale) {
-  if (score == null) return null
-  return scale === 1 ? (score * 100) : score
-}
-
-function getSeverity(pct) {
-  if (pct == null) return "low"
-  if (pct >= 60) return "high"
-  if (pct >= 40) return "moderate"
-  return "low"
-}
-
-const SEVERITY_STYLES = {
-  high: {
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-500/8",
-    border: "border-red-500/25",
-    bar: "[&>div]:bg-red-500",
-    badge: "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8",
-  },
-  moderate: {
-    text: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/8",
-    border: "border-amber-500/25",
-    bar: "[&>div]:bg-amber-500",
-    badge: "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/8",
-  },
-  low: {
-    text: "text-green-600 dark:text-green-400",
-    bg: "bg-green-500/8",
-    border: "border-green-500/25",
-    bar: "[&>div]:bg-green-500",
-    badge: "border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/8",
-  },
-}
+const CODE_LANG_OPTIONS = [
+  { value: "py", label: "Python", ext: ".py" },
+  { value: "java", label: "Java", ext: ".java" },
+  { value: "cpp", label: "C++", ext: ".cpp" },
+  { value: "js", label: "JavaScript", ext: ".js" },
+  { value: "c", label: "C", ext: ".c" },
+  { value: "cs", label: "C#", ext: ".cs" },
+]
 
 // ── Main Page ───────────────────────────────────────────────────
 const BatchScanPage = () => {
+  const [inputMode, setInputMode] = useState("file") // "file" | "editor"
+  // File mode
   const [files, setFiles] = useState([])
+  // Editor mode
+  const [codeA, setCodeA] = useState("")
+  const [codeB, setCodeB] = useState("")
+  const [langA, setLangA] = useState("")
+  const [langB, setLangB] = useState("")
+
   const [scanType, setScanType] = useState("")
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -177,8 +159,16 @@ const BatchScanPage = () => {
       toast.error("Please select a scan type first.")
       return
     }
-    if (files.length === 0) {
+    if (inputMode === "file" && files.length === 0) {
       toast.error("Please add at least one file.")
+      return
+    }
+    if (inputMode === "editor" && (!codeA.trim() || !codeB.trim())) {
+      toast.error("Please paste code in both text areas.")
+      return
+    }
+    if (inputMode === "editor" && scanType === "code_batch" && (!langA || !langB)) {
+      toast.error("Please select a language for each code snippet.")
       return
     }
 
@@ -190,27 +180,44 @@ const BatchScanPage = () => {
     try {
       let blob
 
-      const isSingleZip =
-        files.length === 1 && files[0].name.toLowerCase().endsWith(".zip")
-
-      if (isSingleZip) {
-        blob = files[0]
-      } else {
-        toast.info("Zipping files…")
+      if (inputMode === "editor") {
+        // Create two files from pasted text and zip them
         const zip = new JSZip()
-        for (const file of files) {
-          const buf = await file.arrayBuffer()
-          zip.file(file.name, buf)
+        if (scanType === "code_batch") {
+          const optA = CODE_LANG_OPTIONS.find((l) => l.value === langA)
+          const optB = CODE_LANG_OPTIONS.find((l) => l.value === langB)
+          zip.file(`file_a${optA?.ext || ".py"}`, codeA)
+          zip.file(`file_b${optB?.ext || ".py"}`, codeB)
+        } else {
+          zip.file("text_a.txt", codeA)
+          zip.file("text_b.txt", codeB)
         }
         blob = await zip.generateAsync({ type: "blob" })
+      } else {
+        const isSingleZip =
+          files.length === 1 && files[0].name.toLowerCase().endsWith(".zip")
+
+        if (isSingleZip) {
+          blob = files[0]
+        } else {
+          toast.info("Zipping files…")
+          const zip = new JSZip()
+          for (const file of files) {
+            const buf = await file.arrayBuffer()
+            zip.file(file.name, buf)
+          }
+          blob = await zip.generateAsync({ type: "blob" })
+        }
       }
 
       const formData = new FormData()
-      formData.append("file", blob, isSingleZip ? files[0].name : "upload.zip")
+      formData.append("file", blob, "upload.zip")
 
       const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open("POST", selectedOption.route)
+        const token = localStorage.getItem("token")
+        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`)
 
         xhr.upload.addEventListener("progress", (e) => {
           if (e.lengthComputable) {
@@ -326,15 +333,31 @@ const BatchScanPage = () => {
             </Card>
           </motion.div>
 
-          {/* ── Step 2: Upload ────────────────────────────────────── */}
+          {/* ── Step 2: Upload / Paste ─────────────────────────────── */}
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">2. Add files</CardTitle>
-                <CardDescription>
-                  Drop individual files or a single <code className="text-xs bg-muted px-1 py-0.5 rounded">.zip</code> archive.
-                  Non-zip files will be auto-zipped before upload.
-                </CardDescription>
+                <CardTitle className="text-base">2. Provide content</CardTitle>
+                <div className="flex gap-1 mt-2 p-1 bg-muted/50 rounded-lg w-fit">
+                  <button
+                    onClick={() => { setInputMode("file"); setResults(null); setError(null) }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${inputMode === "file"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Upload Files
+                  </button>
+                  <button
+                    onClick={() => { setInputMode("editor"); setResults(null); setError(null) }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${inputMode === "editor"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    <Type className="h-3.5 w-3.5" /> Paste Text
+                  </button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div
@@ -347,10 +370,9 @@ const BatchScanPage = () => {
                     relative cursor-pointer rounded-xl border-2 border-dashed p-10
                     flex flex-col items-center justify-center gap-3
                     transition-all duration-200
-                    ${
-                      dragOver
-                        ? "border-primary bg-primary/5 scale-[1.01]"
-                        : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+                    ${dragOver
+                      ? "border-primary bg-primary/5 scale-[1.01]"
+                      : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
                     }
                   `}
                 >
@@ -443,8 +465,77 @@ const BatchScanPage = () => {
                         })}
                       </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  )}                
+                  </AnimatePresence>
+
+                ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-muted-foreground">Text A</label>
+                        {scanType === "code_batch" && (
+                          <Select value={langA} onValueChange={setLangA}>
+                            <SelectTrigger className="w-36 h-7 text-xs">
+                              <SelectValue placeholder="Language…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CODE_LANG_OPTIONS.map((lang) => (
+                                <SelectItem key={lang.value} value={lang.value}>
+                                  {lang.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                      <textarea
+                        value={codeA}
+                        onChange={(e) => setCodeA(e.target.value)}
+                        placeholder="Paste first text/code here…"
+                        spellCheck={false}
+                        className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                      />
+                      {codeA.trim() && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {codeA.split("\n").length} lines · {codeA.length} chars
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-muted-foreground">Text B</label>
+                        {scanType === "code_batch" && (
+                          <Select value={langB} onValueChange={setLangB}>
+                            <SelectTrigger className="w-36 h-7 text-xs">
+                              <SelectValue placeholder="Language…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CODE_LANG_OPTIONS.map((lang) => (
+                                <SelectItem key={lang.value} value={lang.value}>
+                                  {lang.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                      <textarea
+                        value={codeB}
+                        onChange={(e) => setCodeB(e.target.value)}
+                        placeholder="Paste second text/code here…"
+                        spellCheck={false}
+                        className="w-full h-52 p-3 rounded-lg border bg-muted/30 font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                      />
+                      {codeB.trim() && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {codeB.split("\n").length} lines · {codeB.length} chars
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                )
               </CardContent>
             </Card>
           </motion.div>
@@ -479,7 +570,7 @@ const BatchScanPage = () => {
             <Button
               id="start-scan-btn"
               size="lg"
-              disabled={uploading || files.length === 0 || !scanType}
+              disabled={uploading || !scanType || (inputMode === "file" ? files.length === 0 : (!codeA.trim() || !codeB.trim()))}
               onClick={handleSubmit}
               className="gap-2 px-8"
             >
@@ -574,185 +665,6 @@ const BatchScanPage = () => {
         </motion.div>
       </div>
     </div>
-  )
-}
-
-// ─── Comparison Card ────────────────────────────────────────────
-function ComparisonCard({ data: r, index, scoreScale }) {
-  const fileA = (r.file_a || r.file1 || "").split("/").pop() || "File A"
-  const fileB = (r.file_b || r.file2 || "").split("/").pop() || "File B"
-
-  const rawScore = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? null
-  const pct = rawScore != null ? normalizeScore(rawScore, scoreScale) : null
-  const pctStr = pct != null ? pct.toFixed(1) : null
-
-  const severity = getSeverity(pct)
-  const styles = SEVERITY_STYLES[severity]
-
-  const verdict = r.verdict || (severity === "high" ? "HIGH SIMILARITY" : severity === "moderate" ? "MODERATE SIMILARITY" : "LOW SIMILARITY")
-
-  const similarLines = r.similar_lines || []
-  const similarChunks = r.similar_chunks || []
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
-    >
-      <Card className={`overflow-hidden transition-colors ${severity !== "low" ? styles.border : ""}`}>
-        <CardContent className="pt-5 pb-4 space-y-4">
-          {/* Header: file names + score */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <p className="text-sm font-semibold">
-                {fileA}
-                <span className="text-muted-foreground font-normal mx-1.5">vs</span>
-                {fileB}
-              </p>
-              {(r.language_a || r.language_b) && (
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">{r.language_a}</Badge>
-                  <span className="text-muted-foreground text-[10px]">/</span>
-                  <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">{r.language_b}</Badge>
-                </div>
-              )}
-              {r.type && !r.language_a && (
-                <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">{r.type}</Badge>
-              )}
-            </div>
-
-            {pctStr != null && (
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="w-24 hidden sm:block">
-                  <Progress value={Math.min(parseFloat(pctStr), 100)} className={`h-2 ${styles.bar}`} />
-                </div>
-                <span className={`text-2xl font-bold font-mono tabular-nums ${styles.text}`}>
-                  {pctStr}<span className="text-sm font-normal text-muted-foreground">%</span>
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Verdict */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className={`text-[11px] font-semibold ${styles.badge}`}>
-              {verdict}
-            </Badge>
-          </div>
-
-          {/* Side-by-side diff: Similar Lines (code) */}
-          {similarLines.length > 0 && (
-            <details className="group" open>
-              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 select-none py-1">
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-                {similarLines.length} similar line{similarLines.length !== 1 ? "s" : ""} found
-              </summary>
-              <div className="mt-2 rounded-lg border overflow-hidden">
-                {/* Split header */}
-                <div className="grid grid-cols-[1fr_48px_1fr] bg-muted/60 border-b">
-                  <div className="px-3 py-1.5 text-[11px] font-mono font-medium text-muted-foreground truncate">
-                    {fileA}
-                  </div>
-                  <div className="border-x border-border/40 flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground/60">match</span>
-                  </div>
-                  <div className="px-3 py-1.5 text-[11px] font-mono font-medium text-muted-foreground truncate">
-                    {fileB}
-                  </div>
-                </div>
-                {/* Matched line pairs */}
-                <div className="max-h-[480px] overflow-y-auto">
-                  {similarLines.map((line, li) => {
-                    const matchPct = ((line.similarity ?? 0) * 100).toFixed(0)
-                    const isHighMatch = (line.similarity ?? 0) >= 0.9
-                    const highlightA = isHighMatch
-                      ? "bg-red-500/[0.08] dark:bg-red-500/10"
-                      : "bg-amber-500/[0.06] dark:bg-amber-500/[0.08]"
-                    const highlightB = isHighMatch
-                      ? "bg-red-500/[0.08] dark:bg-red-500/10"
-                      : "bg-amber-500/[0.06] dark:bg-amber-500/[0.08]"
-                    return (
-                      <div
-                        key={li}
-                        className={`grid grid-cols-[1fr_48px_1fr] ${li > 0 ? "border-t-2 border-border/50" : ""} ${li % 2 === 1 ? "bg-muted/[0.03]" : ""} hover:brightness-95 dark:hover:brightness-110 transition-all`}
-                      >
-                        {/* Left: File A line */}
-                        <div className={`flex ${highlightA}`}>
-                          <div className="w-10 shrink-0 text-right pr-2 py-1.5 text-[11px] font-mono text-muted-foreground/50 select-none border-r border-border/20">
-                            {line.line_a}
-                          </div>
-                          <pre className="flex-1 py-1.5 px-2 text-xs font-mono whitespace-pre-wrap break-all">{line.text_a}</pre>
-                        </div>
-                        {/* Center: match % */}
-                        <div className="border-x border-border/40 flex items-center justify-center bg-muted/30">
-                          <span className={`text-[10px] font-mono font-semibold ${
-                            isHighMatch ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
-                          }`}>
-                            {matchPct}%
-                          </span>
-                        </div>
-                        {/* Right: File B line */}
-                        <div className={`flex ${highlightB}`}>
-                          <div className="w-10 shrink-0 text-right pr-2 py-1.5 text-[11px] font-mono text-muted-foreground/50 select-none border-r border-border/20">
-                            {line.line_b}
-                          </div>
-                          <pre className="flex-1 py-1.5 px-2 text-xs font-mono whitespace-pre-wrap break-all">{line.text_b}</pre>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </details>
-          )}
-
-          {/* Side-by-side diff: Similar Chunks (semantic) */}
-          {similarChunks.length > 0 && (
-            <details className="group" open>
-              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 select-none py-1">
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-                {similarChunks.length} similar chunk{similarChunks.length !== 1 ? "s" : ""} found
-              </summary>
-              <div className="mt-2 space-y-3">
-                {similarChunks.map((chunk, ci) => {
-                  const chunkPct = ((chunk.similarity ?? 0) * 100).toFixed(1)
-                  const isHighMatch = (chunk.similarity ?? 0) >= 0.7
-                  const highlight = isHighMatch
-                    ? "bg-red-500/[0.04] dark:bg-red-500/[0.06]"
-                    : "bg-amber-500/[0.03] dark:bg-amber-500/[0.05]"
-                  return (
-                    <div key={ci} className="rounded-lg border overflow-hidden">
-                      {/* Chunk header */}
-                      <div className="grid grid-cols-[1fr_auto_1fr] bg-muted/50 border-b">
-                        <div className="px-3 py-1.5 text-[11px] font-mono font-medium text-muted-foreground truncate">
-                          {fileA}
-                        </div>
-                        <div className="px-3 py-1.5 flex items-center">
-                          <span className="text-[10px] font-mono font-medium text-muted-foreground">{chunkPct}%</span>
-                        </div>
-                        <div className="px-3 py-1.5 text-[11px] font-mono font-medium text-muted-foreground truncate text-right">
-                          {fileB}
-                        </div>
-                      </div>
-                      {/* Side-by-side text */}
-                      <div className="grid grid-cols-2 divide-x divide-border/40">
-                        <div className={`px-3 py-3 ${highlight}`}>
-                          <p className="text-xs leading-relaxed whitespace-pre-wrap">{chunk.text_a}</p>
-                        </div>
-                        <div className={`px-3 py-3 ${highlight}`}>
-                          <p className="text-xs leading-relaxed whitespace-pre-wrap">{chunk.text_b}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </details>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
   )
 }
 

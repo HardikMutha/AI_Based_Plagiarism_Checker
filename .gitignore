@@ -31,6 +31,5 @@ venv/
 myenv/
 *.csv
 *.txt
-*.joblib
 testcases/
 **/.python-version
