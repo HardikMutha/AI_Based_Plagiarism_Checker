@@ -6,6 +6,10 @@ from app.utils.extract_files import _extract_zip_and_collect_files
 from pathlib import Path
 
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+
+from app.models.report_model import Report
+
 
 _AI_TEXT_DIR = str(
     Path(__file__).resolve().parent.parent / "services" / "ai_text_detection"
@@ -49,7 +53,9 @@ def _extract_text(filepath: str, ext: str) -> str:
 
 
 @ai_text_bp.route("/api/ai-text/batch-process/",methods=["POST"])
+@jwt_required()
 def batch_compare():
+    current_user_id = get_jwt_identity()
     my_files = request.files.get("file")
     
     if(not my_files):
@@ -77,6 +83,16 @@ def batch_compare():
                     result["filename"] = os.path.basename(file_path)
                     resp.append(result)
 
+            
+            report = {
+                "user_id": current_user_id,
+                "total_files": len(filepaths),
+                "total_comparisons": len(resp),
+                "type": "text_ai",
+                "results": resp
+            }
+            Report.create_report(current_user_id, report)
+
             return jsonify({"result":[{
                 "total_files": len(filepaths),
                 "total_comparisons": len(resp),
@@ -88,9 +104,10 @@ def batch_compare():
 
 
 @ai_text_bp.route("/api/ai-text/predict", methods=["POST"])
+@jwt_required
 def predict():
     """
-    Accept a file upload and return AI-text-detection results.
+    Accept file uploads and return AI-text-detection results.
 
     Expects multipart/form-data with:
         file   .txt, .pdf, or .docx file
@@ -99,6 +116,7 @@ def predict():
     Returns JSON:
         { score, verdict, layer_details }
     """
+    current_user_id = get_jwt_identity()
     uploaded = request.files.get("file")
     if not uploaded:
         return jsonify({"error": "No file uploaded. Send a file with key 'file'."}), 400
@@ -124,6 +142,16 @@ def predict():
         result = detect(text, assignment_prompt=assignment_prompt)
 
         final_result = {"result":[result]}
+
+        # Create a report for this single file
+        report = {
+            "user_id": current_user_id,
+            "total_files": 6969,
+            "total_comparisons": 1,
+            "type": "text_ai",
+            "results": [result]
+        }
+        Report.create_report(current_user_id, report)
 
         return jsonify(final_result), 200
 

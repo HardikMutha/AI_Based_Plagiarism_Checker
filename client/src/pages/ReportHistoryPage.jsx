@@ -73,6 +73,15 @@ const TYPE_CONFIG = {
         badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
         scoreScale: 100,
     },
+    text_ai: {
+        label: "Text AI Detection",
+        icon: Bot,
+        color: "text-green-500",
+        bg: "bg-green-500/10",
+        border: "border-green-500/20",
+        badge: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
+        scoreScale: 100,
+    },
 }
 
 const FALLBACK_CONFIG = {
@@ -126,6 +135,7 @@ const ReportHistoryPage = () => {
             })
             if (!res.ok) throw new Error("Failed to load reports")
             const data = await res.json()
+            console.log(data)
             setReports(data.reports || [])
         } catch (err) {
             toast.error(err.message)
@@ -333,13 +343,14 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
     const results = data.results
 
     // For AI detection, show probability
-    const isAIDetection = type === "code_ai_detection"
-    // const aiProb = isAIDetection && results ? results.ai_probability : null
+    const isAICodeDetection = ((type === "code_ai_detection"));
+    const isAITextDetection = ((type === "text_ai"));
+    // const aiProb = isAICodeDetection && results ? results.ai_probability : null
     let aiProb = results?.ai_probability;
 
     // For comparison types, find max similarity
     let maxSim = null;
-    if (!isAIDetection) {
+    if (!isAICodeDetection) {
         maxSim = Array.isArray(results)
             ? results.reduce((max, r) => {
                 const score = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? 0
@@ -493,8 +504,8 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                     </span>
                                 </div>
 
-                                {/* AI detection result */}
-                                {isAIDetection && results && (
+                                {/* AI code detection result */}
+                                {isAICodeDetection && results && (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
                                             {!Array.isArray(results) ? <Badge
@@ -522,8 +533,14 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                                 </Badge>
                                             }
                                             <span className="text-sm text-muted-foreground">
-                                                {results.file_name?.split("/").pop()} •{" "}
-                                                <code className="text-[11px]">{results.language}</code>
+                                                {Array.isArray(results)
+                                                    ? `1 of ${results.length} files • ${results[0]?.file_name?.split("/").pop()}`
+                                                    : results.file_name?.split("/").pop()}
+                                                {results.language && (
+                                                    <>
+                                                        {" "}• <code className="text-[11px]">{results.language}</code>
+                                                    </>
+                                                )}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3 max-w-xs">
@@ -550,8 +567,57 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                     </div>
                                 )}
 
+                                {/* AI text detection preview (collapsed) */}
+                                {isAITextDetection && Array.isArray(results) && results.length > 0 && (
+                                    (() => {
+                                        // Show preview for the first file only (like code AI detection)
+                                        const r = results[0];
+                                        const pct = r.score != null ? r.score * 100 : null;
+                                        const severity = pct >= 70 ? "high" : pct >= 40 ? "moderate" : "low";
+                                        const sevColors = {
+                                            high: "text-red-600 dark:text-red-400",
+                                            moderate: "text-amber-600 dark:text-amber-400",
+                                            low: "text-green-600 dark:text-green-400",
+                                        };
+                                        const barColors = {
+                                            high: "[&>div]:bg-red-500",
+                                            moderate: "[&>div]:bg-amber-500",
+                                            low: "[&>div]:bg-green-500",
+                                        };
+                                        return (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`text-xs font-semibold ${pct >= 70
+                                                            ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8"
+                                                            : pct >= 40
+                                                                ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/8"
+                                                                : "border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/8"
+                                                            }`}
+                                                    >
+                                                        {r.verdict || "N/A"}
+                                                    </Badge>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {`1 of ${results.length} files • ${r.filename?.split("/").pop()}`}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-3 max-w-xs">
+                                                    <Progress
+                                                        value={pct}
+                                                        className={`h-2 ${barColors[severity]}`}
+                                                    />
+                                                    <span className={`text-sm font-mono font-semibold ${sevColors[severity]}`}>
+                                                        {pct != null ? pct.toFixed(1) : "-"}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                )}
+
                                 {/* Comparison results */}
-                                {!isAIDetection && Array.isArray(results) && results.length > 0 && (
+                                {!isAICodeDetection && Array.isArray(results) && results.length > 0 && (
                                     <div className="space-y-2">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                             Comparisons ({results.length})
@@ -623,7 +689,7 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                 )}
 
                                 {/* No results */}
-                                {!isAIDetection && (!Array.isArray(results) || results.length === 0) && (
+                                {!isAICodeDetection && (!Array.isArray(results) || results.length === 0) && (
                                     <p className="text-xs text-muted-foreground italic">No comparison data available.</p>
                                 )}
                             </div>
