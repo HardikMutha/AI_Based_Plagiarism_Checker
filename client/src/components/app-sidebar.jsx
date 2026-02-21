@@ -11,6 +11,7 @@ import {
     Moon,
     Sun,
     PanelLeftClose,
+    BookMarked,
     FileImage
 } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -37,11 +38,6 @@ const items = [
         icon: ShieldCheck,
     },
     {
-        title: "Compare Files",
-        url: "/compare",
-        icon: Files,
-    },
-    {
         title: "AI Analysis",
         url: "/ai-check",
         icon: Bot,
@@ -50,6 +46,11 @@ const items = [
         title: "Batch Scan",
         url: "/batch-scan",
         icon: FileSearch,
+    },
+    {
+        title: "Citation Check",
+        url: "/citations",
+        icon: BookMarked,
     },
     {
         title: "PDF Analysis",

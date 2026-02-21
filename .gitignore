@@ -32,3 +32,4 @@ myenv/
 *.csv
 *.txt
 testcases/
+**/.python-version

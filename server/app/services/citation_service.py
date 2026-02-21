@@ -11,8 +11,10 @@ model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
 
 model.eval()
 
+
 def split_sentences(text):
     return nltk.sent_tokenize(text)
+
 
 def is_suspicious(sentence):
 
@@ -28,16 +30,32 @@ def is_suspicious(sentence):
 
     probs = torch.softmax(outputs.logits, dim=1)
     prediction = torch.argmax(probs).item()
-    
-    print(sentence)
-    print(probs)
-    print(prediction)
-    print("-----------")
 
-    return prediction == 1   # 1 = citation needed
+    return prediction == 1
 
-def filter_suspicious_sentences(text):
+
+def get_suspicious_with_context(text):
 
     sentences = split_sentences(text)
+    suspicious_items = []
 
-    return [s for s in sentences if is_suspicious(s)]
+    for i, s in enumerate(sentences):
+
+        if is_suspicious(s):
+
+            context = ""
+
+            if i > 0:
+                context += sentences[i - 1] + " "
+
+            context += sentences[i] + " "
+
+            if i < len(sentences) - 1:
+                context += sentences[i + 1]
+
+            suspicious_items.append({
+                "sentence": s,
+                "context": context.strip()
+            })
+
+    return suspicious_items
