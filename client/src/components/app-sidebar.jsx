@@ -12,7 +12,8 @@ import {
     Sun,
     PanelLeftClose,
     BookMarked,
-    FileImage
+    FileImage,
+    GraduationCap
 } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
@@ -36,6 +37,11 @@ const items = [
         title: "Dashboard",
         url: "/dashboard",
         icon: ShieldCheck,
+    },
+    {
+        title: "Assignments",
+        url: "/assignments",
+        icon: GraduationCap,
     },
     {
         title: "AI Analysis",

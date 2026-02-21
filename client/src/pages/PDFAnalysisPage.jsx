@@ -175,7 +175,7 @@ const PDFAnalysisPage = () => {
 
       setResults(result)
       const totalMatches = (result.total_image_matches || 0) + (result.total_table_matches || 0)
-      toast.success(`Scan complete — ${totalMatches} match${totalMatches !== 1 ? "es" : ""} found across ${result.total_files} PDFs.`)
+      toast.success(`Scan complete  ${totalMatches} match${totalMatches !== 1 ? "es" : ""} found across ${result.total_files} PDFs.`)
     } catch (err) {
       setError(err.message)
       toast.error(err.message)
@@ -208,7 +208,7 @@ const PDFAnalysisPage = () => {
           <motion.div variants={item}>
             <h2 className="text-3xl font-bold tracking-tight">PDF Image & Table Comparison</h2>
             <p className="text-muted-foreground mt-1">
-              Upload multiple PDFs — we'll detect copied, screenshotted, or identical images and tables across documents.
+              Upload multiple PDFs  we'll detect copied, screenshotted, or identical images and tables across documents.
             </p>
           </motion.div>
 
@@ -225,11 +225,10 @@ const PDFAnalysisPage = () => {
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
                   onDrop={onDrop}
-                  className={`relative cursor-pointer rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 transition-all duration-200 ${
-                    dragOver
+                  className={`relative cursor-pointer rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 transition-all duration-200 ${dragOver
                       ? "border-primary bg-primary/5 scale-[1.01]"
                       : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
-                  }`}
+                    }`}
                 >
                   <motion.div
                     animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
@@ -401,25 +400,22 @@ const PDFAnalysisPage = () => {
                 <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit flex-wrap">
                   <button
                     onClick={() => setActiveTab("images")}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
-                      activeTab === "images" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === "images" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     <ImageIcon className="h-4 w-4" /> Image Matches ({results.total_image_matches})
                   </button>
                   <button
                     onClick={() => setActiveTab("tables")}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
-                      activeTab === "tables" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === "tables" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     <Table2 className="h-4 w-4" /> Table Matches ({results.total_table_matches})
                   </button>
                   <button
                     onClick={() => setActiveTab("sources")}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
-                      activeTab === "sources" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeTab === "sources" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      }`}
                   >
                     <Globe className="h-4 w-4" /> Web Sources
                   </button>
@@ -540,25 +536,25 @@ function ImageMatchCard({ match, index }) {
             {match.match_type === "contained_in"
               ? "EMBEDDED IN SCREENSHOT"
               : match.match_type === "page_screenshot"
-              ? "PAGE SCREENSHOT"
-              : pct >= 90
-              ? "IDENTICAL / COPY"
-              : pct >= 75
-              ? "LIKELY SCREENSHOT"
-              : "SIMILAR IMAGE"}
+                ? "PAGE SCREENSHOT"
+                : pct >= 90
+                  ? "IDENTICAL / COPY"
+                  : pct >= 75
+                    ? "LIKELY SCREENSHOT"
+                    : "SIMILAR IMAGE"}
           </Badge>
 
           {/* Side-by-side images */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border bg-muted/20 p-2">
-              <p className="text-[10px] font-mono text-muted-foreground mb-1.5 truncate">{match.file_a} — p.{match.page_a}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mb-1.5 truncate">{match.file_a}  p.{match.page_a}</p>
               <div className="flex items-center justify-center min-h-[120px] max-h-[240px]">
                 <img src={match.data_a} alt="Image A" className="max-w-full max-h-[220px] object-contain rounded" loading="lazy" />
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">{match.width_a}×{match.height_a}px</p>
             </div>
             <div className="rounded-lg border bg-muted/20 p-2">
-              <p className="text-[10px] font-mono text-muted-foreground mb-1.5 truncate">{match.file_b} — p.{match.page_b}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mb-1.5 truncate">{match.file_b}  p.{match.page_b}</p>
               <div className="flex items-center justify-center min-h-[120px] max-h-[240px]">
                 <img src={match.data_b} alt="Image B" className="max-w-full max-h-[220px] object-contain rounded" loading="lazy" />
               </div>
@@ -656,7 +652,7 @@ function TableMatchCard({ match, index }) {
             <thead>
               <tr className="bg-muted/60 border-b">
                 {tbl.headers.map((h, i) => (
-                  <th key={i} className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h || "—"}</th>
+                  <th key={i} className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h || ""}</th>
                 ))}
               </tr>
             </thead>
@@ -665,7 +661,7 @@ function TableMatchCard({ match, index }) {
             {tbl.rows.slice(0, 6).map((row, ri) => (
               <tr key={ri} className={`border-b last:border-0 transition-colors hover:bg-muted/30 ${ri % 2 === 0 ? "" : "bg-muted/10"}`}>
                 {row.map((cell, ci) => (
-                  <td key={ci} className="px-3 py-2 text-sm whitespace-nowrap">{cell || "—"}</td>
+                  <td key={ci} className="px-3 py-2 text-sm whitespace-nowrap">{cell || ""}</td>
                 ))}
               </tr>
             ))}
@@ -714,8 +710,8 @@ function TableMatchCard({ match, index }) {
 
           {showSideBySide ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {renderTable(tblA, `${match.file_a} — p.${match.page_a}`)}
-              {renderTable(tblB, `${match.file_b} — p.${match.page_b}`)}
+              {renderTable(tblA, `${match.file_a}  p.${match.page_a}`)}
+              {renderTable(tblB, `${match.file_b}  p.${match.page_b}`)}
             </div>
           ) : (
             renderTable(tblA)

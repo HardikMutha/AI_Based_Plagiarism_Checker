@@ -59,7 +59,7 @@ class SemanticUtils:
     #     cov_ba = (S.max(axis=0) >= tau).mean()
     #     coverage = float(0.5 * (cov_ab + cov_ba))
         
-    #     # Weighted composite — tune weights to your use case
+    #     # Weighted composite  tune weights to your use case
     #     overall = (
     #         0.2 * max_sim +
     #         0.5 * topk_mean +

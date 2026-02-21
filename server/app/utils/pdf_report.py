@@ -386,7 +386,7 @@ REPORT_TEMPLATE = """
             margin-bottom: 14px;
         }
 
-        /* ── Meta grid — use flexbox, not table ── */
+        /* ── Meta grid  use flexbox, not table ── */
         .meta-row { display: flex; flex-wrap: wrap; gap: 0 28px; }
         .meta-col { min-width: 100px; }
         .meta-label { color: #64748b; font-size: 0.72rem; margin-bottom: 2px; }

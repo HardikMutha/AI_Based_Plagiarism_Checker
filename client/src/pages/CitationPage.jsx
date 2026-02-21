@@ -124,7 +124,7 @@ const groupPapers = (papers) => {
     for (const p of papers) {
         const key = `${(p.title || "").toLowerCase().trim()}||${p.doi || ""}`;
 
-        // Extract sentences — new format uses matched_sentences (array),
+        // Extract sentences  new format uses matched_sentences (array),
         // old format used matched_sentence (string) or sentence (string)
         let incomingSentences = [];
         if (Array.isArray(p.matched_sentences)) {

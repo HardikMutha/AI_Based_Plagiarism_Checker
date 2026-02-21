@@ -1,5 +1,5 @@
 """
-PDF Comparison Service  —  Simple & Reliable
+PDF Comparison Service    Simple & Reliable
 
 Compares images across PDFs using:
   • Perceptual hash  (catches resizes, compression, screenshots)
@@ -62,7 +62,7 @@ def _auto_crop(img: Image.Image, fuzz: int = 15) -> Image.Image:
 
 
 def _phash(img: Image.Image, hash_size: int = 16) -> np.ndarray:
-    """DCT-based perceptual hash — robust to resize and compression."""
+    """DCT-based perceptual hash  robust to resize and compression."""
     from scipy.fft import dct
 
     factor = 4
@@ -121,7 +121,7 @@ def _img_to_base64(img: Image.Image, fmt: str = "PNG") -> str:
 
 def _template_match_score(small: Image.Image, large: Image.Image) -> float:
     """
-    Fast NCC template matching — checks if `small` appears inside `large`.
+    Fast NCC template matching  checks if `small` appears inside `large`.
     Works on downsampled greyscale for speed.
     Returns best NCC score (0–1).
     """
@@ -568,7 +568,7 @@ def _run_reverse_searches(images_by_file: list[dict]) -> None:
                 print(f"[reverse-search] failed for p{img.get('page')}: {e}")
 
     found = sum(1 for pf in images_by_file for img in pf["images"] if img.get("web_sources"))
-    print(f"[reverse-search] done — {found}/{len(all_imgs)} image(s) had web sources")
+    print(f"[reverse-search] done  {found}/{len(all_imgs)} image(s) had web sources")
 
 
 # ════════════════════════════════════════════════════════════════

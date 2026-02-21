@@ -1,13 +1,13 @@
 #type:ignore
 """
-Layer 3 — Pattern Recognition ("Logic" Layer)
+Layer 3  Pattern Recognition ("Logic" Layer)
 
 Uses a lightweight sentence-transformer (all-MiniLM-L6-v2, ~80 MB) to
 detect two AI tells:
 
-  1. **Semantic Drift** — AI text stays "too on-topic"; consecutive
+  1. **Semantic Drift**  AI text stays "too on-topic"; consecutive
      paragraphs have unusually uniform similarity.
-  2. **Logic Loops** — AI restates the prompt's premise mid-response.
+  2. **Logic Loops**  AI restates the prompt's premise mid-response.
      Detected via cosine similarity between the assignment prompt (or
      the first sentence as proxy) and text segments.
 """

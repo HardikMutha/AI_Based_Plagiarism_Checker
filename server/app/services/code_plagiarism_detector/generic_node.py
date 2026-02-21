@@ -1,5 +1,5 @@
 """
-Generic AST Node — The universal language-agnostic representation.
+Generic AST Node  The universal language-agnostic representation.
 All language-specific ASTs are normalized into trees of GenericNode.
 """
 

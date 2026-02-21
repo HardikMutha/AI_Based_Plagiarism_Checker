@@ -1,5 +1,5 @@
 """
-Layer 2 — Training Script
+Layer 2  Training Script
 
 1. Balanced-samples the dataset
 2. Extracts Layer-1 features for every sample
@@ -71,38 +71,38 @@ def train(dataset_path: str | None = None):
     dataset_path = dataset_path or DATASET_PATH
     os.makedirs(MODELS_DIR, exist_ok=True)
 
-    # Step 1 — load + balance
+    # Step 1  load + balance
     print(f"[train] Loading dataset from {dataset_path} …")
     df = pd.read_csv(dataset_path)
     df = df.dropna(subset=["text", "label"])
     df = _balanced_sample(df, TRAINING_BALANCED_SAMPLE)
 
-    # Step 2 — extract features
+    # Step 2  extract features
     print("[train] Extracting features …")
     X = _extract_features_batch(df["text"])
     y = df["label"].values
 
-    # Step 3 — scale
+    # Step 3  scale
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # Step 4 — train/test split
+    # Step 4  train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y, test_size=0.2, random_state=42, stratify=y,
     )
 
-    # Step 5 — cross-validation
+    # Step 5  cross-validation
     print(f"[train] Running {CV_FOLDS}-fold cross-validation …")
     clf = XGBClassifier(**XGBOOST_PARAMS)
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=42)
     cv_scores = cross_val_score(clf, X_train, y_train, cv=cv, scoring="roc_auc")
     print(f"[train] CV AUC-ROC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-    # Step 6 — final fit
+    # Step 6  final fit
     print("[train] Training final model …")
     clf.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
 
-    # Step 7 — evaluate
+    # Step 7  evaluate
     y_pred = clf.predict(X_test)
     y_prob = clf.predict_proba(X_test)[:, 1]
 
@@ -117,7 +117,7 @@ def train(dataset_path: str | None = None):
     print()
     print(classification_report(y_test, y_pred, target_names=["Human", "AI"]))
 
-    # Step 8 — save
+    # Step 8  save
     joblib.dump(clf, MODEL_PATH)
     joblib.dump(scaler, SCALER_PATH)
     print(f"[train] Model saved to {MODEL_PATH}")
