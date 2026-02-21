@@ -10,7 +10,8 @@ import {
     User,
     Moon,
     Sun,
-    PanelLeftClose
+    PanelLeftClose,
+    FileImage
 } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
@@ -49,6 +50,11 @@ const items = [
         title: "Batch Scan",
         url: "/batch-scan",
         icon: FileSearch,
+    },
+    {
+        title: "PDF Analysis",
+        url: "/pdf-analysis",
+        icon: FileImage,
     },
     {
         title: "Reports History",
