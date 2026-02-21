@@ -10,7 +10,8 @@ import {
     User,
     Moon,
     Sun,
-    PanelLeftClose
+    PanelLeftClose,
+    BookMarked
 } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
@@ -49,6 +50,11 @@ const items = [
         title: "Batch Scan",
         url: "/batch-scan",
         icon: FileSearch,
+    },
+    {
+        title: "Citation Check",
+        url: "/citations",
+        icon: BookMarked,
     },
     {
         title: "Reports History",

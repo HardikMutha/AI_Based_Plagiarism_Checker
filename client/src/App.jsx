@@ -5,6 +5,7 @@ import SignupPage from "./pages/SignupPage"
 import DashboardPage from "./pages/DashboardPage"
 import BatchScanPage from "./pages/BatchScanPage"
 import AICheckPage from "./pages/AICheckPage"
+import CitationPage from "./pages/CitationPage"
 import ProtectedRoute from "./components/ProtectedRoute"
 import { SidebarProvider } from "./components/ui/sidebar"
 import { AppSidebar } from "./components/app-sidebar"
@@ -54,6 +55,7 @@ function App() {
           <Route path="/compare" element={<DashboardPage />} />
           <Route path="/ai-check" element={<AICheckPage />} />
           <Route path="/batch-scan" element={<BatchScanPage />} />
+          <Route path="/citations" element={<CitationPage />} />
           <Route path="/reports" element={<DashboardPage />} />
           <Route path="/settings" element={<DashboardPage />} />
         </Route>

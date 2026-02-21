@@ -33,3 +33,4 @@ myenv/
 *.txt
 *.joblib
 testcases/
+**/.python-version

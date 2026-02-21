@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.services.citation_service import filter_suspicious_sentences
-from app.services.openalex_service import fetch_openalex_for_sentences
+from app.services.citation_service import get_suspicious_with_context
+from app.services.openalex_service import fetch_openalex_for_contexts
 
 openalex_bp = Blueprint("openalex", __name__)
 
@@ -15,12 +15,13 @@ def analyze_assignment():
 
     try:
 
-        suspicious = filter_suspicious_sentences(text)
-
-        papers = fetch_openalex_for_sentences(suspicious)
+        suspicious = get_suspicious_with_context(text)
+        papers = fetch_openalex_for_contexts(suspicious)
 
         return jsonify({
-            "suspicious_sentences": suspicious,
+            "suspicious_sentences": [
+            i["sentence"] for i in suspicious
+        ],
             "candidate_papers": papers
         })
 
