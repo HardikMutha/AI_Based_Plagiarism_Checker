@@ -15,6 +15,15 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Optional
 
+from app.services.code_plagiarism_detector.ai_model import FEATURE_NAMES, LogisticModel, GBTModel
+
+_MODEL_DIR = Path(__file__).parent / "models"
+_LOGISTIC_WEIGHTS = _MODEL_DIR / "weights.json"
+_GBT_WEIGHTS = _MODEL_DIR / "weights_gbt.pkl"
+
+_model: Optional[LogisticModel] = None
+_gbt_model: Optional[GBTModel] = None
+
 from app.services.code_plagiarism_detector.generic_node import GenericNode
 from app.services.code_plagiarism_detector.registry import ParserRegistry
 from app.services.code_plagiarism_detector.results import AIDetectionResult
@@ -117,6 +126,35 @@ _SIGNAL_META: dict[str, dict] = {
     },
 }
 
+def _get_model() -> LogisticModel | GBTModel:
+    """Load the best available pre-trained model."""
+    global _model, _gbt_model
+
+    # Prefer GBT if available
+    if _gbt_model is None and _GBT_WEIGHTS.exists():
+        try:
+            _gbt_model = GBTModel()
+            _gbt_model.load(str(_GBT_WEIGHTS))
+        except Exception:
+            _gbt_model = None
+
+    if _gbt_model is not None and _gbt_model.trained:
+        return _gbt_model
+
+    # Fall back to logistic
+    if _model is None:
+        _model = LogisticModel()
+        if _LOGISTIC_WEIGHTS.exists():
+            _model.load(str(_LOGISTIC_WEIGHTS))
+        else:
+            # If no pre-trained weights, use hand-tuned defaults as fallback
+            _model = None
+
+    if _model is not None and _model.trained:
+        return _model
+
+    return None  # type: ignore[return-value]
+
 
 class AICodeDetector:
     """
@@ -142,18 +180,12 @@ class AICodeDetector:
         return self._analyze_tree(tree, filepath, language, code)
 
     # ── Core analysis ───────────────────────────────────────────────────
-
-    def _analyze_tree(
-        self,
-        tree: GenericNode,
-        label: str,
-        language: str,
-        code: str,
-    ) -> AIDetectionResult:
+    def _analyze_tree(self, tree, label, language, code):
+        """Core analysis – now uses trained model when available."""
         signals: dict[str, float] = {}
         explanations: list[str] = []
 
-        # ── Structural signals ──────────────────────────────────────
+        # ── Compute all signals (unchanged) ─────────────────────────
         signals["depth_uniformity"] = self._depth_uniformity(tree)
         signals["low_entropy"] = self._structural_entropy(tree)
         signals["subtree_symmetry"] = self._subtree_symmetry(tree)
@@ -162,8 +194,6 @@ class AICodeDetector:
         signals["branching_consistency"] = self._branching_consistency(tree)
         signals["pattern_repetition"] = self._pattern_repetition(tree)
         signals["guard_clause_ratio"] = self._guard_clause_ratio(tree)
-
-        # ── Textual signals ─────────────────────────────────────────
         signals["comment_pattern"] = self._comment_pattern_score(code, language)
         signals["naming_convention"] = self._naming_convention_score(code, language)
         signals["docstring_density"] = self._docstring_density(code, language)
@@ -175,45 +205,21 @@ class AICodeDetector:
         signals["emoji_usage"] = self._emoji_usage(code)
         signals["em_dash_usage"] = self._em_dash_usage(code)
 
+        # ── Score via trained model OR fallback ─────────────────────
+        model = _get_model()
+        if model is not None:
+            ai_probability = max(0.0, min(1.0, round(model.predict_proba(signals), 4)))
+        else:
+            # Fallback: original hand-tuned weights
+            ai_probability = self._fallback_score(signals)
+
         # ── Build explanations ──────────────────────────────────────
         for key, val in signals.items():
             meta = _SIGNAL_META.get(key, {})
             if val >= 0.65:
                 explanations.append(meta.get("tip", key))
 
-        # ── Weighted combination ────────────────────────────────────
-        weights = {
-            # structural  (total 0.45)
-            "depth_uniformity":       0.05,
-            "low_entropy":            0.10,
-            "subtree_symmetry":       0.05,
-            "error_handling_density":  0.05,
-            "func_size_uniformity":   0.07,
-            "branching_consistency":   0.05,
-            "pattern_repetition":     0.05,
-            "guard_clause_ratio":     0.03,
-            # textual  (total 0.55)
-            "comment_pattern":        0.12,
-            "naming_convention":      0.08,
-            "docstring_density":      0.07,
-            "import_style":           0.05,
-            "variable_name_entropy":  0.07,
-            "code_to_logic_ratio":    0.06,
-            "line_length_uniformity": 0.05,
-            "f_string_consistency":   0.05,
-            "emoji_usage":            0.20,
-            "em_dash_usage":          0.12,
-        }
-
-        raw_score = sum(signals[k] * weights[k] for k in weights)
-
-        # Apply non-linear scaling so high-signal code separates more
-        # from low-signal code.  A logistic curve centred at 0.40.
-        scaled = self._logistic_scale(raw_score, midpoint=0.40, steepness=8.0)
-
-        ai_probability = max(0.0, min(1.0, round(scaled, 4)))
-
-        # Compute per-signal details for the UI
+        # Per-signal details for the UI
         signal_details = {}
         for key, val in signals.items():
             meta = _SIGNAL_META.get(key, {})
@@ -235,7 +241,7 @@ class AICodeDetector:
             explanations=explanations,
             signal_details=signal_details,
         )
-
+    
     # ── Utility ─────────────────────────────────────────────────────────
 
     @staticmethod
