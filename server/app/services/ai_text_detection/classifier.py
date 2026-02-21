@@ -11,48 +11,46 @@ import os
 import joblib
 import numpy as np
 
-from config import MODEL_PATH, SCALER_PATH
 import feature_extractor
 
-_model = None
-_scaler = None
+
+class AiTextClassifier:
+    def __init__(self,model_path,scaler_path):
+        self.model_path = model_path
+        self.scaler_path = scaler_path
+        self.model = None
+        self.scaler = None
+
+    def _ensure_loaded(self):
+        if self.model is not None:
+            return
+
+        if not os.path.exists(self.model_path):
+            raise FileNotFoundError(
+                f"Trained model not found at {self.model_path}. "
+                "Run train_classifier.py first."
+            )
+
+        self.model = joblib.load(self.model_path)
+        self.scaler = joblib.load(self.scaler_path)
 
 
-def _ensure_loaded():
-    global _model, _scaler
-    if _model is not None:
-        return
+    def predict(self,features: dict[str, float]) -> dict:
+        self._ensure_loaded()
 
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError(
-            f"Trained model not found at {MODEL_PATH}. "
-            "Run train_classifier.py first."
-        )
+        arr = np.array(
+            [features[name] for name in feature_extractor.FEATURE_NAMES],
+            dtype=np.float64,
+        ).reshape(1, -1)
 
-    _model = joblib.load(MODEL_PATH)
-    _scaler = joblib.load(SCALER_PATH)
+        arr_scaled = self.scaler.transform(arr)
+        prob = float(self.model.predict_proba(arr_scaled)[0, 1])
+        label = int(prob >= 0.5)
 
-
-def predict(features: dict[str, float]) -> dict:
-    """
-    Given a feature dict (from feature_extractor.extract), return
-    {"probability": float, "label": int}.
-    """
-    _ensure_loaded()
-
-    arr = np.array(
-        [features[name] for name in feature_extractor.FEATURE_NAMES],
-        dtype=np.float64,
-    ).reshape(1, -1)
-
-    arr_scaled = _scaler.transform(arr)
-    prob = float(_model.predict_proba(arr_scaled)[0, 1])
-    label = int(prob >= 0.5)
-
-    return {"probability": prob, "label": label}
+        return {"probability": prob, "label": label}
 
 
-def predict_text(text: str) -> dict:
-    """Convenience: extract features then predict in one call."""
-    features = feature_extractor.extract(text)
-    return predict(features)
+    def predict_text(self,text: str) -> dict:
+        """Convenience: extract features then predict in one call."""
+        features = feature_extractor.extract(text)
+        return self.predict(features)

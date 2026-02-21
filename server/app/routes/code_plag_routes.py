@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import zipfile
 from flask import Blueprint, request, jsonify
-from numpy import rint
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
