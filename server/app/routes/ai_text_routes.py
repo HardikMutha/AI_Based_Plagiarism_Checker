@@ -146,7 +146,7 @@ def predict():
         # Create a report for this single file
         report = {
             "user_id": current_user_id,
-            "total_files": 6969,
+            "total_files": len(final_result["result"]),
             "total_comparisons": 1,
             "type": "text_ai",
             "results": [result]

@@ -18,6 +18,7 @@ from app.utils.extract_files import _extract_zip_and_collect_files
 from app.models.report_model import Report
 
 text_plag_bp = Blueprint("text_plagiarism", __name__)
+semantic = SemanticUtils()
 
 
 @text_plag_bp.route("/api/text/minhash", methods=["POST"])
@@ -81,7 +82,6 @@ def semantic_similarity():
 
             filepaths = _extract_zip_and_collect_files(zip_path, extract_dir, SUPPORTED_TEXT_EXTENSIONS)
 
-            semantic = SemanticUtils()
             results = semantic.compare_files(filepaths)
 
             report = {
