@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   Upload,
   FileCode,
+  FileArchive,
   X,
   Loader2,
   AlertTriangle,
@@ -15,7 +16,9 @@ import {
   Bot,
   User,
   Type,
+  Trash2,
 } from "lucide-react"
+import JSZip from "jszip"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -31,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const SUPPORTED_EXTENSIONS = [".py", ".java", ".cpp", ".js", ".c", ".cs"]
+const SUPPORTED_EXTENSIONS = [".py", ".java", ".cpp", ".js", ".c", ".cs", ".zip"]
 
 const LANGUAGE_OPTIONS = [
   { value: "python", label: "Python", ext: ".py" },
@@ -45,50 +48,66 @@ const LANGUAGE_OPTIONS = [
 function formatBytes(bytes) {
   if (bytes === 0) return "0 B"
   const k = 1024
-  const sizes = ["B", "KB", "MB"]
+  const sizes = ["B", "KB", "MB", "GB"]
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
+}
+
+function getFileIcon(name) {
+  const ext = name.split(".").pop().toLowerCase()
+  if (ext === "zip") return FileArchive
+  return FileCode
 }
 
 // ── Main Page ───────────────────────────────────────────────────
 const AICheckPage = () => {
   const [inputMode, setInputMode] = useState("file") // "file" | "editor"
-  const [file, setFile] = useState(null)
+  const [files, setFiles] = useState([])
   const [codeText, setCodeText] = useState("")
   const [language, setLanguage] = useState("")
   const [analyzing, setAnalyzing] = useState(false)
-  const [result, setResult] = useState(null)
+  const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef(null)
 
-  const handleFile = useCallback((incoming) => {
-    const f = incoming[0]
-    if (!f) return
-    const ext = "." + f.name.split(".").pop().toLowerCase()
-    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
-      toast.error(`Unsupported file type. Supported: ${SUPPORTED_EXTENSIONS.join(", ")}`)
-      return
-    }
-    setFile(f)
-    setResult(null)
-    setError(null)
-  }, [])
+  // ── File handling (multi-file) ─────────────────────────────
+  const addFiles = useCallback(
+    (incoming) => {
+      const newFiles = Array.from(incoming).filter((f) => {
+        const ext = "." + f.name.split(".").pop().toLowerCase()
+        if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+          toast.error(`Unsupported: ${f.name}. Supported: ${SUPPORTED_EXTENSIONS.join(", ")}`)
+          return false
+        }
+        return !files.some((existing) => existing.name === f.name && existing.size === f.size)
+      })
+      if (newFiles.length === 0) return
+      setFiles((prev) => [...prev, ...newFiles])
+      setResults(null)
+      setError(null)
+    },
+    [files]
+  )
 
-  const clearFile = () => {
-    setFile(null)
-    setResult(null)
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const clearAll = () => {
+    setFiles([])
+    setResults(null)
     setError(null)
   }
 
   const switchMode = (mode) => {
     setInputMode(mode)
-    setResult(null)
+    setResults(null)
     setError(null)
   }
 
   const canSubmit = inputMode === "file"
-    ? !!file
+    ? files.length > 0
     : codeText.trim().length > 0 && !!language
 
   // ── Drag & drop ─────────────────────────────────────────────
@@ -97,7 +116,7 @@ const AICheckPage = () => {
   const onDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files)
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files)
   }
 
   // ── Submit ──────────────────────────────────────────────────
@@ -109,14 +128,31 @@ const AICheckPage = () => {
     }
 
     setAnalyzing(true)
-    setResult(null)
+    setResults(null)
     setError(null)
 
     try {
       const formData = new FormData()
 
       if (inputMode === "file") {
-        formData.append("file", file, file.name)
+        // Single zip? Send directly. Multiple files? Auto-zip.
+        const isSingleZip =
+          files.length === 1 && files[0].name.toLowerCase().endsWith(".zip")
+
+        if (isSingleZip) {
+          formData.append("file", files[0], files[0].name)
+        } else if (files.length === 1) {
+          formData.append("file", files[0], files[0].name)
+        } else {
+          toast.info("Zipping files…")
+          const zip = new JSZip()
+          for (const file of files) {
+            const buf = await file.arrayBuffer()
+            zip.file(file.name, buf)
+          }
+          const blob = await zip.generateAsync({ type: "blob" })
+          formData.append("file", blob, "upload.zip")
+        }
       } else {
         const langOpt = LANGUAGE_OPTIONS.find((l) => l.value === language)
         const filename = `input${langOpt?.ext || ".py"}`
@@ -136,8 +172,8 @@ const AICheckPage = () => {
         throw new Error(data.error || `Server error ${res.status}`)
       }
 
-      setResult(data)
-      toast.success("Analysis complete.")
+      setResults(data.results)
+      toast.success(`Analysis complete — ${data.total_files} file${data.total_files !== 1 ? "s" : ""} analyzed.`)
     } catch (err) {
       setError(err.message)
       toast.error(err.message)
@@ -177,7 +213,7 @@ const AICheckPage = () => {
           <motion.div variants={item}>
             <h2 className="text-3xl font-bold tracking-tight">AI Code Detector</h2>
             <p className="text-muted-foreground mt-1">
-              Upload a source code file to analyze whether it was generated by AI.
+              Upload code files (or a .zip) to analyze whether they were generated by AI.
             </p>
           </motion.div>
 
@@ -195,7 +231,7 @@ const AICheckPage = () => {
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Upload className="h-3.5 w-3.5" /> Upload File
+                    <Upload className="h-3.5 w-3.5" /> Upload Files
                   </button>
                   <button
                     onClick={() => switchMode("editor")}
@@ -211,75 +247,115 @@ const AICheckPage = () => {
               </CardHeader>
               <CardContent>
                 {inputMode === "file" ? (
-                  <>
-                    {!file ? (
-                      <div
-                        id="file-drop-zone"
-                        onClick={() => inputRef.current?.click()}
-                        onDragOver={onDragOver}
-                        onDragLeave={onDragLeave}
-                        onDrop={onDrop}
-                        className={`
-                          relative cursor-pointer rounded-xl border-2 border-dashed p-10
-                          flex flex-col items-center justify-center gap-3
-                          transition-all duration-200
-                          ${dragOver
-                            ? "border-primary bg-primary/5 scale-[1.01]"
-                            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
-                          }
-                        `}
+                  <div>
+                    <div
+                      id="file-drop-zone"
+                      onClick={() => inputRef.current?.click()}
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      className={`
+                        relative cursor-pointer rounded-xl border-2 border-dashed p-10
+                        flex flex-col items-center justify-center gap-3
+                        transition-all duration-200
+                        ${dragOver
+                          ? "border-primary bg-primary/5 scale-[1.01]"
+                          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+                        }
+                      `}
+                    >
+                      <motion.div
+                        animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       >
+                        <div className="p-4 rounded-full bg-primary/10">
+                          <Upload className="h-8 w-8 text-primary" />
+                        </div>
+                      </motion.div>
+                      <div className="text-center">
+                        <p className="font-medium">
+                          {dragOver ? "Drop files here" : "Click or drag code files here"}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Supports {SUPPORTED_EXTENSIONS.join(", ")} — multiple files will be zipped automatically
+                        </p>
+                      </div>
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        multiple
+                        accept={SUPPORTED_EXTENSIONS.join(",")}
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files.length) addFiles(e.target.files)
+                          e.target.value = ""
+                        }}
+                      />
+                    </div>
+
+                    <AnimatePresence>
+                      {files.length > 0 && (
                         <motion.div
-                          animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4 space-y-2"
                         >
-                          <div className="p-4 rounded-full bg-primary/10">
-                            <Upload className="h-8 w-8 text-primary" />
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium">
+                              {files.length} file{files.length !== 1 && "s"} selected
+                              <span className="text-muted-foreground ml-2">
+                                ({formatBytes(files.reduce((s, f) => s + f.size, 0))} total)
+                              </span>
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-destructive hover:text-destructive gap-1"
+                              onClick={(e) => { e.stopPropagation(); clearAll() }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Clear all
+                            </Button>
+                          </div>
+
+                          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                            {files.map((file, idx) => {
+                              const Icon = getFileIcon(file.name)
+                              return (
+                                <motion.div
+                                  key={`${file.name}-${file.size}`}
+                                  initial={{ opacity: 0, x: -12 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: 12 }}
+                                  transition={{ delay: idx * 0.03 }}
+                                  className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="p-1.5 rounded-md bg-muted">
+                                      <Icon className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium truncate">{file.name}</p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {formatBytes(file.size)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); removeFile(idx) }}
+                                    className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
+                                  >
+                                    <X className="h-4 w-4 text-destructive" />
+                                  </button>
+                                </motion.div>
+                              )
+                            })}
                           </div>
                         </motion.div>
-                        <div className="text-center">
-                          <p className="font-medium">
-                            {dragOver ? "Drop file here" : "Click or drag a code file here"}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Supported: {SUPPORTED_EXTENSIONS.join(", ")}
-                          </p>
-                        </div>
-                        <input
-                          ref={inputRef}
-                          type="file"
-                          accept={SUPPORTED_EXTENSIONS.join(",")}
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files.length) handleFile(e.target.files)
-                            e.target.value = ""
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 rounded-md bg-primary/10">
-                            <FileCode className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{formatBytes(file.size)}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={clearFile}
-                          className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
-                        >
-                          <X className="h-4 w-4 text-destructive" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <Select value={language} onValueChange={setLanguage}>
@@ -358,14 +434,24 @@ const AICheckPage = () => {
 
           {/* Results */}
           <AnimatePresence>
-            {result && !analyzing && (
+            {results && !analyzing && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <ResultsPanel result={result} />
+                {results.map((r, idx) => (
+                  <div key={idx} className="space-y-4">
+                    {results.length > 1 && (
+                      <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <FileCode className="h-4 w-4" />
+                        File {idx + 1} of {results.length}: <span className="text-foreground font-semibold">{r.file_name?.split("/").pop()}</span>
+                      </h3>
+                    )}
+                    <ResultsPanel result={r} />
+                  </div>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>

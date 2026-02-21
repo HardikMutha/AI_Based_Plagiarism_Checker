@@ -67,18 +67,18 @@ def api_batch_compare():
 @code_plag_bp.route("/api/code/ai_detect", methods=["POST"])
 @jwt_required()
 def api_ai_detect():
+    """Detect whether uploaded code file(s) are AI-generated.
+
+    Accepts either a single code file or a .zip containing multiple code files.
+    Always returns { results: [...], total_files: N }.
+    """
     current_user_id = get_jwt_identity()
-    """Detect whether a single uploaded code file is AI-generated."""
     uploaded = request.files.get("file")
 
     if not uploaded:
         return jsonify({"error": "No file uploaded"}), 400
 
     ext = Path(uploaded.filename).suffix.lower()
-    if ext not in SUPPORTED_CODE_EXTENSIONS:
-        return jsonify({
-            "error": f"Unsupported extension '{ext}'. Supported: {', '.join(sorted(SUPPORTED_CODE_EXTENSIONS))}"
-        }), 400
 
     with tempfile.TemporaryDirectory() as tmp:
         file_path = os.path.join(tmp, uploaded.filename)
@@ -86,17 +86,59 @@ def api_ai_detect():
 
         try:
             detector = AICodeDetector()
-            result = detector.analyze_file(file_path).as_dict()
+
+            if ext == ".zip":
+                # ── Zip mode: extract and analyze every supported file ──
+                extract_dir = os.path.join(tmp, "extract")
+                os.makedirs(extract_dir, exist_ok=True)
+
+                with zipfile.ZipFile(file_path, "r") as zf:
+                    for member in zf.namelist():
+                        member_path = os.path.join(extract_dir, member)
+                        if not os.path.abspath(member_path).startswith(
+                            os.path.abspath(extract_dir)
+                        ):
+                            raise ValueError("Unsafe ZIP file detected.")
+                    zf.extractall(extract_dir)
+
+                filepaths = []
+                for root, _, files in os.walk(extract_dir):
+                    for f in files:
+                        if Path(f).suffix.lower() in SUPPORTED_CODE_EXTENSIONS:
+                            filepaths.append(os.path.join(root, f))
+
+                if not filepaths:
+                    return jsonify({
+                        "error": f"ZIP contains no supported code files. Supported: {', '.join(sorted(SUPPORTED_CODE_EXTENSIONS))}"
+                    }), 400
+
+                results = []
+                for fp in filepaths:
+                    r = detector.analyze_file(fp).as_dict()
+                    # Use relative name inside the zip for clarity
+                    r["file_name"] = os.path.relpath(fp, extract_dir)
+                    results.append(r)
+
+            else:
+                # ── Single-file mode ──
+                if ext not in SUPPORTED_CODE_EXTENSIONS:
+                    return jsonify({
+                        "error": f"Unsupported extension '{ext}'. Supported: {', '.join(sorted(SUPPORTED_CODE_EXTENSIONS))}"
+                    }), 400
+
+                result = detector.analyze_file(file_path).as_dict()
+                results = [result]
+
             report = {
                 "user_id": current_user_id,
-                "total_files": 1,
+                "total_files": len(results),
                 "total_comparisons": 0,
                 "type": "code_ai_detection",
-                "results": result
+                "results": results,
             }
-            current_user_id = get_jwt_identity()
             Report.create_report(current_user_id, report)
-            return jsonify(result)
+            return jsonify(report)
+
         except Exception as e:
             return jsonify({"error": str(e)}), 400
 
