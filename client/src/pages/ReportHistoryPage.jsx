@@ -7,7 +7,6 @@ import {
     FileCode,
     FileText,
     Bot,
-    Sparkles,
     ChevronRight,
     ChevronDown,
     AlertTriangle,
@@ -17,6 +16,8 @@ import {
     Inbox,
 } from "lucide-react"
 import { toast } from "sonner"
+
+const Sparkles = FileText;
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
@@ -333,16 +334,27 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
 
     // For AI detection, show probability
     const isAIDetection = type === "code_ai_detection"
-    const aiProb = isAIDetection && results ? results.ai_probability : null
+    // const aiProb = isAIDetection && results ? results.ai_probability : null
+    let aiProb = results?.ai_probability;
 
     // For comparison types, find max similarity
-    const maxSim = !isAIDetection && Array.isArray(results)
-        ? results.reduce((max, r) => {
-            const score = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? 0
-            const normalized = cfg.scoreScale === 1 ? score * 100 : score
-            return Math.max(max, normalized)
-        }, 0)
-        : null
+    let maxSim = null;
+    if (!isAIDetection) {
+        maxSim = Array.isArray(results)
+            ? results.reduce((max, r) => {
+                const score = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? 0
+                const normalized = cfg.scoreScale === 1 ? score * 100 : score
+                return Math.max(max, normalized)
+            }, 0)
+            : null
+    } else if (Array.isArray(results)) {
+        let len = results.length;
+        let sum = 0;
+        for (let i = 0; i < len; i++) {
+            sum += results[i].ai_probability;
+        }
+        aiProb = sum / len;
+    }
 
     return (
         <motion.div
@@ -406,7 +418,6 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                             </div>
                         )}
 
-                        {/* AI prob pill */}
                         {aiProb != null && (
                             <div className="text-right hidden sm:block">
                                 <p className="text-[10px] text-muted-foreground">AI prob</p>
@@ -486,7 +497,7 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                 {isAIDetection && results && (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
-                                            <Badge
+                                            {!Array.isArray(results) ? <Badge
                                                 variant="outline"
                                                 className={`text-xs font-semibold ${aiProb * 100 >= 70
                                                     ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8"
@@ -497,6 +508,19 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                             >
                                                 {results.verdict || "N/A"}
                                             </Badge>
+                                                :
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-xs font-semibold ${aiProb * 100 >= 70
+                                                        ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8"
+                                                        : aiProb * 100 >= 40
+                                                            ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/8"
+                                                            : "border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/8"
+                                                        }`}
+                                                >
+                                                    Average
+                                                </Badge>
+                                            }
                                             <span className="text-sm text-muted-foreground">
                                                 {results.file_name?.split("/").pop()} •{" "}
                                                 <code className="text-[11px]">{results.language}</code>
