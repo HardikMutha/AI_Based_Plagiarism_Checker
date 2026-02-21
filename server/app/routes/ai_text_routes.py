@@ -104,7 +104,7 @@ def batch_compare():
 
 
 @ai_text_bp.route("/api/ai-text/predict", methods=["POST"])
-@jwt_required
+@jwt_required()
 def predict():
     """
     Accept file uploads and return AI-text-detection results.
