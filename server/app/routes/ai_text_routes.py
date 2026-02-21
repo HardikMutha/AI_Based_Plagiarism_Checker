@@ -77,11 +77,11 @@ def batch_compare():
                     result["filename"] = os.path.basename(file_path)
                     resp.append(result)
 
-            return jsonify({
+            return jsonify({"result":[{
                 "total_files": len(filepaths),
                 "total_comparisons": len(resp),
                 "results": resp
-            })
+            }]})
         except Exception as e:
             return jsonify({"error": str(e)}), 400
 
@@ -123,7 +123,9 @@ def predict():
 
         result = detect(text, assignment_prompt=assignment_prompt)
 
-        return jsonify(result), 200
+        final_result = {"result":[result]}
+
+        return jsonify(final_result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
