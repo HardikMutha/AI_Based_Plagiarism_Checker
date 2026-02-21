@@ -361,116 +361,122 @@ const BatchScanPage = () => {
                   </button>
                 </div>
               </CardHeader>
+
+
+
               <CardContent>
-                <div
-                  id="file-drop-zone"
-                  onClick={() => inputRef.current?.click()}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  onDrop={onDrop}
-                  className={`
+                {inputMode === "file" ? (
+                <div>
+                  <div
+                    id="file-drop-zone"
+                    onClick={() => inputRef.current?.click()}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                    className={`
                     relative cursor-pointer rounded-xl border-2 border-dashed p-10
                     flex flex-col items-center justify-center gap-3
                     transition-all duration-200
                     ${dragOver
-                      ? "border-primary bg-primary/5 scale-[1.01]"
-                      : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
-                    }
+                        ? "border-primary bg-primary/5 scale-[1.01]"
+                        : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+                      }
                   `}
-                >
-                  <motion.div
-                    animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <div className="p-4 rounded-full bg-primary/10">
-                      <Upload className="h-8 w-8 text-primary" />
-                    </div>
-                  </motion.div>
-                  <div className="text-center">
-                    <p className="font-medium">
-                      {dragOver ? "Drop files here" : "Click or drag files here"}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Supports any file type — multiple files will be zipped automatically
-                    </p>
-                  </div>
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files.length) addFiles(e.target.files)
-                      e.target.value = ""
-                    }}
-                  />
-                </div>
-
-                {/* File list */}
-                <AnimatePresence>
-                  {files.length > 0 && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 space-y-2"
+                      animate={dragOver ? { scale: 1.15, rotate: -5 } : { scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium">
-                          {files.length} file{files.length !== 1 && "s"} selected
-                          <span className="text-muted-foreground ml-2">
-                            ({formatBytes(files.reduce((s, f) => s + f.size, 0))} total)
-                          </span>
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-destructive hover:text-destructive gap-1"
-                          onClick={(e) => { e.stopPropagation(); clearAll() }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Clear all
-                        </Button>
-                      </div>
-
-                      <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
-                        {files.map((file, idx) => {
-                          const Icon = getFileIcon(file.name)
-                          return (
-                            <motion.div
-                              key={`${file.name}-${file.size}`}
-                              initial={{ opacity: 0, x: -12 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 12 }}
-                              transition={{ delay: idx * 0.03 }}
-                              className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-1.5 rounded-md bg-muted">
-                                  <Icon className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">{file.name}</p>
-                                  <p className="text-[11px] text-muted-foreground">
-                                    {formatBytes(file.size)}
-                                  </p>
-                                </div>
-                              </div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); removeFile(idx) }}
-                                className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
-                              >
-                                <X className="h-4 w-4 text-destructive" />
-                              </button>
-                            </motion.div>
-                          )
-                        })}
+                      <div className="p-4 rounded-full bg-primary/10">
+                        <Upload className="h-8 w-8 text-primary" />
                       </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                    <div className="text-center">
+                      <p className="font-medium">
+                        {dragOver ? "Drop files here" : "Click or drag files here"}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Supports any file type — multiple files will be zipped automatically
+                      </p>
+                    </div>
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files.length) addFiles(e.target.files)
+                        e.target.value = ""
+                      }}
+                    />
+                  </div>
+
+                  <AnimatePresence>
+                    {files.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium">
+                            {files.length} file{files.length !== 1 && "s"} selected
+                            <span className="text-muted-foreground ml-2">
+                              ({formatBytes(files.reduce((s, f) => s + f.size, 0))} total)
+                            </span>
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-destructive hover:text-destructive gap-1"
+                            onClick={(e) => { e.stopPropagation(); clearAll() }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Clear all
+                          </Button>
+                        </div>
+
+                        <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                          {files.map((file, idx) => {
+                            const Icon = getFileIcon(file.name)
+                            return (
+                              <motion.div
+                                key={`${file.name}-${file.size}`}
+                                initial={{ opacity: 0, x: -12 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 12 }}
+                                transition={{ delay: idx * 0.03 }}
+                                className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="p-1.5 rounded-md bg-muted">
+                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{file.name}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {formatBytes(file.size)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeFile(idx) }}
+                                  className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
+                                >
+                                  <X className="h-4 w-4 text-destructive" />
+                                </button>
+                              </motion.div>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 ) : (
+
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -537,8 +543,12 @@ const BatchScanPage = () => {
                     </div>
                   </div>
                 </div>
-                )
+                )}
               </CardContent>
+            
+            
+            
+            
             </Card>
           </motion.div>
 
