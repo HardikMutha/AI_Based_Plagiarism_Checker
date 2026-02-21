@@ -111,7 +111,7 @@ const ReportHistoryPage = () => {
         setLoading(true)
         try {
             const token = localStorage.getItem("token")
-            const res = await fetch(import.meta.env.VITE_SERVER_URL + "/api/reports", {
+            const res = await fetch("/api/reports", {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             })
             if (!res.ok) throw new Error("Failed to load reports")
@@ -132,7 +132,7 @@ const ReportHistoryPage = () => {
         setDeleting(id)
         try {
             const token = localStorage.getItem("token")
-            const res = await fetch(import.meta.env.VITE_SERVER_URL + `/api/reports/${id}`, {
+            const res = await fetch(`/api/reports/${id}`, {
                 method: "DELETE",
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             })

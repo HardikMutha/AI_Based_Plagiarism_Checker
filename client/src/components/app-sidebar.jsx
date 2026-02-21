@@ -38,11 +38,6 @@ const items = [
         icon: ShieldCheck,
     },
     {
-        title: "Compare Files",
-        url: "/compare",
-        icon: Files,
-    },
-    {
         title: "AI Analysis",
         url: "/ai-check",
         icon: Bot,

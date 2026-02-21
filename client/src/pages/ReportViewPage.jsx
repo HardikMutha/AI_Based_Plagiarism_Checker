@@ -29,7 +29,7 @@ const ReportViewPage = () => {
         const fetchReport = async () => {
             try {
                 const token = localStorage.getItem("token")
-                const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/reports/${id}`, {
+                const res = await fetch(`/api/reports/${id}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                 })
                 if (!res.ok) throw new Error("Failed to load report")
@@ -50,7 +50,7 @@ const ReportViewPage = () => {
         try {
             const token = localStorage.getItem("token")
             console.log(id)
-            const res = await fetch(import.meta.env.VITE_SERVER_URL + `/api/reports/${id}/pdf`, {
+            const res = await fetch(`/api/reports/${id}/pdf`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             })
             if (!res.ok) throw new Error("Failed to download PDF")
@@ -122,7 +122,7 @@ const ReportViewPage = () => {
                             <span className="hidden sm:inline">Print</span>
                         </Button>
                         <Button onClick={handleDownloadPDF} className="gap-2" disabled={downloading}>
-                            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span><svg width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1v10M8 11l3-3M8 11l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="13" width="10" height="2" rx="1" fill="currentColor"/></svg></span>}
+                            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span><svg width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1v10M8 11l3-3M8 11l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><rect x="3" y="13" width="10" height="2" rx="1" fill="currentColor" /></svg></span>}
                             {downloading ? "Downloading…" : "Download PDF"}
                         </Button>
                     </div>

@@ -84,7 +84,6 @@ def check_citations():
 
     # remove \n from text
     text = text.replace("\n", " ")
-
     if not text or len(text.strip()) < 300:
         return jsonify({
             "error": "Please provide at least 300 characters of text for meaningful citation analysis."
