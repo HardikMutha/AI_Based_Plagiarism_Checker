@@ -20,6 +20,8 @@ import {
     ExternalLink,
     Trophy,
     ShieldAlert,
+    ChevronDown,
+    Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -101,6 +103,7 @@ const AssignmentDetailPage = () => {
     const [dragActive, setDragActive] = useState(false);
     const [rankings, setRankings] = useState(null);
     const [loadingRankings, setLoadingRankings] = useState(false);
+    const [expandedSub, setExpandedSub] = useState(null); // id of expanded submission
 
     // Text submission form
     const [textForm, setTextForm] = useState({
@@ -582,62 +585,112 @@ const AssignmentDetailPage = () => {
                                                 <div className="col-span-1"></div>
                                             </div>
                                             {/* Rows */}
-                                            <div className="divide-y max-h-[400px] overflow-y-auto">
-                                                {submissions.map((sub, idx) => (
-                                                    <div
-                                                        key={sub.id}
-                                                        className="grid grid-cols-12 gap-2 px-4 py-3 items-center text-sm hover:bg-muted/20 transition-colors"
-                                                    >
-                                                        <div className="col-span-1 text-xs text-muted-foreground">
-                                                            {idx + 1}
-                                                        </div>
-                                                        <div className="col-span-2 font-mono text-xs">
-                                                            {sub.roll_no || (
-                                                                <span className="text-muted-foreground italic"></span>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-span-3 truncate">
-                                                            {sub.student_name || (
-                                                                <span className="text-muted-foreground italic"></span>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-span-3 truncate">
-                                                            {sub.type === "file" ? (
-                                                                <span className="flex items-center gap-1">
-                                                                    <Icon className={`h-3 w-3 ${meta.color} shrink-0`} />
-                                                                    <span className="truncate text-xs">
-                                                                        {sub.original_name || "file"}
-                                                                    </span>
-                                                                </span>
-                                                            ) : (
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="text-[10px] bg-sky-500/10 text-sky-600 border-sky-500/30"
-                                                                >
-                                                                    Text
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        <div className="col-span-2 text-xs text-muted-foreground">
-                                                            {timeAgo(sub.uploaded_at)}
-                                                        </div>
-                                                        <div className="col-span-1 flex justify-end">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                onClick={() => handleDeleteSub(sub.id)}
-                                                                disabled={deletingSub === sub.id}
+                                            <div className="divide-y max-h-[600px] overflow-y-auto">
+                                                {submissions.map((sub, idx) => {
+                                                    const isExpanded = expandedSub === sub.id;
+                                                    const content = sub.text_content || "";
+                                                    const previewLines = content.split("\n").slice(0, 30);
+                                                    const hasMore = content.split("\n").length > 30;
+                                                    return (
+                                                        <div key={sub.id}>
+                                                            <div
+                                                                className={`grid grid-cols-12 gap-2 px-4 py-3 items-center text-sm cursor-pointer transition-colors ${isExpanded ? "bg-muted/30" : "hover:bg-muted/20"}`}
+                                                                onClick={() => setExpandedSub(isExpanded ? null : sub.id)}
                                                             >
-                                                                {deletingSub === sub.id ? (
-                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                                ) : (
-                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                <div className="col-span-1 text-xs text-muted-foreground">
+                                                                    {idx + 1}
+                                                                </div>
+                                                                <div className="col-span-2 font-mono text-xs">
+                                                                    {sub.roll_no || (
+                                                                        <span className="text-muted-foreground italic"></span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="col-span-3 truncate">
+                                                                    {sub.student_name || (
+                                                                        <span className="text-muted-foreground italic"></span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="col-span-3 truncate">
+                                                                    {sub.type === "file" ? (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Icon className={`h-3 w-3 ${meta.color} shrink-0`} />
+                                                                            <span className="truncate text-xs">
+                                                                                {sub.original_name || "file"}
+                                                                            </span>
+                                                                        </span>
+                                                                    ) : (
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="text-[10px] bg-sky-500/10 text-sky-600 border-sky-500/30"
+                                                                        >
+                                                                            Text
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <div className="col-span-2 text-xs text-muted-foreground flex items-center gap-1">
+                                                                    {timeAgo(sub.uploaded_at)}
+                                                                </div>
+                                                                <div className="col-span-1 flex justify-end items-center gap-1">
+                                                                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                                        onClick={(e) => { e.stopPropagation(); handleDeleteSub(sub.id); }}
+                                                                        disabled={deletingSub === sub.id}
+                                                                    >
+                                                                        {deletingSub === sub.id ? (
+                                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                            {/* Expandable preview */}
+                                                            <AnimatePresence>
+                                                                {isExpanded && content && (
+                                                                    <motion.div
+                                                                        initial={{ height: 0, opacity: 0 }}
+                                                                        animate={{ height: "auto", opacity: 1 }}
+                                                                        exit={{ height: 0, opacity: 0 }}
+                                                                        transition={{ duration: 0.2 }}
+                                                                        className="overflow-hidden"
+                                                                    >
+                                                                        <div className="px-4 pb-3">
+                                                                            <div className="bg-muted/50 rounded-lg border p-3 overflow-x-auto">
+                                                                                <div className="flex items-center gap-2 mb-2">
+                                                                                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                                    <span className="text-[11px] font-medium text-muted-foreground">
+                                                                                        Preview — {sub.original_name || "submission"}
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-muted-foreground ml-auto">
+                                                                                        {content.split("\n").length} lines · {(content.length / 1024).toFixed(1)} KB
+                                                                                    </span>
+                                                                                </div>
+                                                                                <pre className="text-xs font-mono leading-5 text-foreground/90 whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto">
+                                                                                    <code>
+                                                                                        {previewLines.map((line, i) => (
+                                                                                            <div key={i} className="flex">
+                                                                                                <span className="inline-block w-8 text-right text-muted-foreground/50 select-none mr-3 shrink-0">{i + 1}</span>
+                                                                                                <span>{line}</span>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                        {hasMore && (
+                                                                                            <div className="text-muted-foreground/50 mt-1 italic">
+                                                                                                … {content.split("\n").length - 30} more lines
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </code>
+                                                                                </pre>
+                                                                            </div>
+                                                                        </div>
+                                                                    </motion.div>
                                                                 )}
-                                                            </Button>
+                                                            </AnimatePresence>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -810,8 +863,8 @@ const AssignmentDetailPage = () => {
                                                                 <div className="col-span-2 text-center">
                                                                     {s.flagged_pairs > 0 ? (
                                                                         <Badge variant="outline" className={`text-[10px] ${s.flagged_pairs >= 2
-                                                                                ? "bg-red-500/10 text-red-600 border-red-500/30"
-                                                                                : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                                                                            ? "bg-red-500/10 text-red-600 border-red-500/30"
+                                                                            : "bg-amber-500/10 text-amber-600 border-amber-500/30"
                                                                             }`}>
                                                                             {s.flagged_pairs} pair{s.flagged_pairs !== 1 ? "s" : ""}
                                                                         </Badge>
@@ -822,8 +875,8 @@ const AssignmentDetailPage = () => {
                                                                 <div className="col-span-2 text-center">
                                                                     {s.max_score > 0 ? (
                                                                         <span className={`text-xs font-bold font-mono ${s.max_score >= 70 ? "text-red-600"
-                                                                                : s.max_score >= 50 ? "text-amber-600"
-                                                                                    : "text-green-600"
+                                                                            : s.max_score >= 50 ? "text-amber-600"
+                                                                                : "text-green-600"
                                                                             }`}>
                                                                             {s.max_score.toFixed(1)}%
                                                                         </span>
@@ -834,8 +887,8 @@ const AssignmentDetailPage = () => {
                                                                 <div className="col-span-2 text-center">
                                                                     {s.ai_probability !== null ? (
                                                                         <span className={`text-xs font-bold font-mono ${s.ai_probability >= 0.7 ? "text-red-600"
-                                                                                : s.ai_probability >= 0.5 ? "text-amber-600"
-                                                                                    : "text-green-600"
+                                                                            : s.ai_probability >= 0.5 ? "text-amber-600"
+                                                                                : "text-green-600"
                                                                             }`}>
                                                                             {(s.ai_probability * 100).toFixed(1)}%
                                                                         </span>

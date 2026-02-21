@@ -334,7 +334,7 @@ const DashboardPage = () => {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </motion.div>
           ) : (
-            <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Total Reports */}
               <Card className="border-none shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -393,6 +393,20 @@ const DashboardPage = () => {
                     {aiDetectionReports > 0
                       ? `Avg. across ${aiDetectionReports} scan${aiDetectionReports !== 1 ? "s" : ""}`
                       : "No AI scans yet"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Assignments */}
+              <Card className="border-none shadow-sm bg-gradient-to-br from-emerald-500/10 to-emerald-500/5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Assignments</CardTitle>
+                  <GraduationCap className="text-emerald-600" size={20} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{assignments.length}</div>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    {assignments.reduce((acc, a) => acc + (a.submissions || []).length, 0)} total submission{assignments.reduce((acc, a) => acc + (a.submissions || []).length, 0) !== 1 ? "s" : ""}
                   </p>
                 </CardContent>
               </Card>
