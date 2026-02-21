@@ -48,10 +48,8 @@ def _heuristic_score(features: dict[str, float]) -> float:
     if features.get("emoji_density", 0.0) > 0.5:
         signals.append(min(features["emoji_density"] / 3.0, 1.0))
 
-    # Near-zero misspellings in a long text is a strong AI indicator
-    misspelling = features.get("misspelling_ratio", 0.05)
-    if misspelling < 0.005:
-        signals.append(0.8)
+    if features.get("markdown_density", 0.0) > 0.15:
+        signals.append(min(features["markdown_density"] / 0.6, 1.0))
 
     return float(np.mean(signals)) if signals else 0.0
 
@@ -102,19 +100,14 @@ def detect(text: str, assignment_prompt: str | None = None) -> dict:
         verdict       - "Likely Human" | "Review Recommended" | "Likely AI"
         layer_details - per-layer breakdown for explainability
     """
-    # Layer 1
     features = feature_extractor.extract(text)
 
-    # Layer 2
     ml_result = classifier.predict(features)
 
-    # Layer 3
     pattern_result = pattern_analyzer.analyze(text, assignment_prompt)
 
-    # Heuristic sub-score from Layer 1
     heuristic = _heuristic_score(features)
 
-    # Combine
     final_score = _combine_scores(ml_result["probability"], pattern_result, heuristic)
 
     return {
