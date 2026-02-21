@@ -190,11 +190,12 @@ class MinHashUtils:
 
                 verdict = "LIKELY NOT PLAGIARISED"
                 overall = round(sim, 4)
+                print(overall)
                 if overall >= 0.40:
                     verdict = "POSSIBLY PLAGIARISED"
-                elif overall >= 0.75:
+                if overall >= 0.75:
                     verdict = "LIKELY PLAGIARISED"
-                elif overall >= 0.90:
+                if overall >= 0.90:
                     verdict = "ALMOST CERTAINLY PLAGIARISED"
 
                 res = {

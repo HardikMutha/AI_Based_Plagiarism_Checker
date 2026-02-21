@@ -63,6 +63,15 @@ const TYPE_CONFIG = {
         badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
         scoreScale: 100,
     },
+    pdf_analysis: {
+        label: "PDF Analysis",
+        icon: Bot,
+        color: "text-indigo-500",
+        bg: "bg-indigo-500/10",
+        border: "border-indigo-500/20",
+        badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+        scoreScale: 100,
+    },
 }
 
 const FALLBACK_CONFIG = {

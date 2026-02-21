@@ -5,7 +5,10 @@ import { ArrowLeft, Loader2, AlertTriangle, FileCode, FileText, Sparkles, Bot, F
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
-import { ComparisonCard } from "@/components/ComparisonCard"
+import { CodeCheckReport } from "@/components/reports/CodeCheckReport"
+import { MinHashReport } from "@/components/reports/MinHashReport"
+import { SemanticReport } from "@/components/reports/SemanticReport"
+import { PDFReport } from "@/components/reports/PDFReport"
 
 const TYPE_CONFIG = {
     ast_comparison: { label: "Code — AST", icon: FileCode, scoreScale: 100 },
@@ -242,16 +245,29 @@ const ReportViewPage = () => {
                             </div>
                         )}
 
-                        {!isAIDetection && Array.isArray(results) && results.length > 0 && (
+                        {!isAIDetection && type !== "pdf_analysis" && Array.isArray(results) && results.length > 0 && (
                             <div className="space-y-4">
                                 <h3 className="text-xl font-semibold">Comparison Results</h3>
-                                {results.map((r, idx) => (
-                                    <ComparisonCard key={idx} data={r} index={idx} scoreScale={cfg.scoreScale} />
-                                ))}
+                                {results.map((r, idx) => {
+                                    if (type === "code_batch" || type === "ast_comparison") {
+                                        return <CodeCheckReport key={idx} data={r} index={idx} scoreScale={cfg.scoreScale} />
+                                    }
+                                    if (type === "text_minhash" || type === "min_hash") {
+                                        return <MinHashReport key={idx} data={r} index={idx} scoreScale={cfg.scoreScale} />
+                                    }
+                                    return <SemanticReport key={idx} data={r} index={idx} scoreScale={cfg.scoreScale} />
+                                })}
                             </div>
                         )}
 
-                        {!isAIDetection && (!Array.isArray(results) || results.length === 0) && (
+                        {type === "pdf_analysis" && (
+                            <div className="space-y-4 mt-6">
+                                <h3 className="text-xl font-semibold">Comparison Results</h3>
+                                <PDFReport results={results} />
+                            </div>
+                        )}
+
+                        {!isAIDetection && type !== "pdf_analysis" && (!Array.isArray(results) || results.length === 0) && (
                             <p className="text-muted-foreground">No matches found.</p>
                         )}
                     </motion.div>

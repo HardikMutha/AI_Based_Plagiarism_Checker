@@ -28,6 +28,7 @@ def download_report_pdf(report_id):
         "min_hash": {"label": "Text — MinHash", "scoreScale": 1},
         "semantic_similarity": {"label": "Text — Semantic", "scoreScale": 1},
         "code_ai_detection": {"label": "AI Detection", "scoreScale": 100},
+        "pdf_analysis": {"label": "PDF Analysis", "scoreScale": 100},
     }
     FALLBACK_CONFIG = {"label": "Report", "scoreScale": 100}
     cfg = TYPE_CONFIG.get(type, FALLBACK_CONFIG)
