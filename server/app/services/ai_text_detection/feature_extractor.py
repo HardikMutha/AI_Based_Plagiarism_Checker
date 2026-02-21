@@ -12,7 +12,6 @@ from collections import Counter
 
 import numpy as np
 import pyphen
-from spellchecker import SpellChecker
 
 from config import (
     AI_FILLER_PHRASES,
@@ -20,15 +19,16 @@ from config import (
     AI_TRANSITION_WORDS,
     COMMON_WORD_RANK_CUTOFF,
     EMOJI_PATTERN,
+    IGNORE_WORDS,
     SYLLABLE_LANGUAGE,
 )
 
 _hyphenator = pyphen.Pyphen(lang=SYLLABLE_LANGUAGE)
 _emoji_re = re.compile(EMOJI_PATTERN)
-_spell = SpellChecker()
 _ai_transition_set = {w.lower() for w in AI_TRANSITION_WORDS}
 _ai_hedge_lower = [p.lower() for p in AI_HEDGE_PHRASES]
 _ai_filler_lower = [p.lower() for p in AI_FILLER_PHRASES]
+_ignore_set = {w.lower() for w in IGNORE_WORDS}
 
 _common_words: set | None = None
 
@@ -53,7 +53,8 @@ FEATURE_NAMES = [
     "hapax_ratio",
     "avg_word_length",
     "rare_word_ratio",
-    "misspelling_ratio",
+
+    "markdown_density",
 
     "paragraph_length_variance",
     "paragraph_count_norm",
@@ -176,18 +177,33 @@ def _vocabulary_features(words: list[str]) -> dict:
     common = _load_common_words()
     rare_ratio = sum(1 for w in words if w not in common) / n if common else 0.0
 
-    # Spell check on unique words only (faster), then weight by frequency
-    candidates = [w for w in freq if len(w) > 2]
-    misspelled = _spell.unknown(candidates) if candidates else set()
-    misspelled_count = sum(freq[w] for w in misspelled)
-
     return {
         "ttr": unique / n,
         "hapax_ratio": hapax / max(unique, 1),
         "avg_word_length": float(np.mean([len(w) for w in words])) if words else 0.0,
         "rare_word_ratio": rare_ratio,
-        "misspelling_ratio": misspelled_count / n,
     }
+
+
+def _formatting_features(text: str) -> dict:
+    """Detect markdown formatting — AI outputs are heavy on headers, bullets, bold, code fences."""
+    lines = text.split("\n")
+    non_empty = [ln for ln in lines if ln.strip()]
+    total_lines = max(len(non_empty), 1)
+
+    bullet_re = re.compile(r"^\s*[-*+]\s+")
+    numbered_re = re.compile(r"^\s*\d+[.)]\s+")
+    header_re = re.compile(r"^\s*#{1,6}\s+")
+    bold_count = len(re.findall(r"\*\*[^*]+\*\*|__[^_]+__", text))
+    code_fence_count = text.count("```")
+
+    md_lines = 0
+    for ln in non_empty:
+        if bullet_re.match(ln) or numbered_re.match(ln) or header_re.match(ln):
+            md_lines += 1
+
+    md_elements = md_lines + bold_count + code_fence_count
+    return {"markdown_density": md_elements / total_lines}
 
 
 def _structural_features(text: str, words: list[str]) -> dict:
@@ -208,7 +224,7 @@ def _structural_features(text: str, words: list[str]) -> dict:
 
 def extract(text: str) -> dict[str, float]:
     """Return a dict of all 20 features for the given text."""
-    words = _words(text)
+    words = [w for w in _words(text) if w not in _ignore_set]
     sentences = _split_sentences(text)
 
     features: dict[str, float] = {}
@@ -216,6 +232,7 @@ def extract(text: str) -> dict[str, float]:
     features.update(_syllable_rhythm_features(words, sentences))
     features.update(_punctuation_features(text, sentences))
     features.update(_vocabulary_features(words))
+    features.update(_formatting_features(text))
     features.update(_structural_features(text, words))
     return features
 
