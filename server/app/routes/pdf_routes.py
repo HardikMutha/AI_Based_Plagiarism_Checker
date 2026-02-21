@@ -3,8 +3,12 @@ import tempfile
 import zipfile
 from pathlib import Path
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+
 
 from app.services.pdf_extraction import compare_pdfs
+from app.models.report_model import Report
+
 
 pdf_bp = Blueprint("pdf_analysis", __name__)
 
@@ -33,6 +37,7 @@ def _extract_zip_pdfs(zip_path: str, extract_dir: str) -> list[str]:
 
 
 @pdf_bp.route("/api/pdf/compare", methods=["POST"])
+@jwt_required()
 def pdf_compare():
     """
     Accept either:
@@ -40,6 +45,8 @@ def pdf_compare():
       - multiple PDF files in the 'files' field
     Extracts images + tables from each PDF and does pairwise comparison.
     """
+    current_user_id = get_jwt_identity()
+
     uploaded_zip = request.files.get("file")
     uploaded_files = request.files.getlist("files")
 
@@ -68,6 +75,15 @@ def pdf_compare():
 
         try:
             result = compare_pdfs(pdf_paths)
+            report = {
+                "user_id": current_user_id,
+                "total_files": len(uploaded_files) if uploaded_files else len(pdf_paths),
+                "type": "pdf_analysis",
+                "results": result
+            }
+            insert_result = Report.create_report(current_user_id, report)
+            result["report_id"] = str(insert_result.inserted_id)
+
             return jsonify(result)
         except Exception as e:
             return jsonify({"error": str(e)}), 400

@@ -2,6 +2,7 @@
 import os
 import sys
 import tempfile
+from app.utils.extract_files import _extract_zip_and_collect_files
 from pathlib import Path
 
 from flask import Blueprint, request, jsonify
@@ -16,7 +17,7 @@ from detector import detect
 
 ai_text_bp = Blueprint("ai_text", __name__)
 
-ALLOWED_EXTENSIONS = {".txt", ".pdf", ".docx"}
+SUPPORTED_FILE_EXTENSIONS = {".txt", ".pdf", ".docx"}
 
 
 def _extract_text(filepath: str, ext: str) -> str:
@@ -46,6 +47,46 @@ def _extract_text(filepath: str, ext: str) -> str:
     return ""
 
 
+
+@ai_text_bp.route("/api/ai-text/batch-process/",methods=["POST"])
+def batch_compare():
+    my_files = request.files.get("file")
+    
+    if(not my_files):
+        return jsonify({"error":"No file uploaded"}),400
+
+    if Path(my_files.filename).suffix.lower() != ".zip":
+        return jsonify({"error": "Only .zip files are allowed"}), 400
+
+    with tempfile.TemporaryDirectory() as tmp:
+        zip_path = os.path.join(tmp, my_files.filename)
+        my_files.save(zip_path)
+        try:
+            extracted_dir = os.path.join(tmp, "extract")
+            os.makedirs(extracted_dir, exist_ok=True)
+            filepaths = _extract_zip_and_collect_files(
+                zip_path, extracted_dir, SUPPORTED_FILE_EXTENSIONS, min_files=1
+            )
+
+            resp = []
+            for file_path in filepaths:
+                ext = Path(file_path).suffix.lower()
+                text = _extract_text(file_path, ext)
+                if text and text.strip():
+                    result = detect(text)
+                    result["filename"] = os.path.basename(file_path)
+                    resp.append(result)
+
+            return jsonify({"result":[{
+                "total_files": len(filepaths),
+                "total_comparisons": len(resp),
+                "results": resp
+            }]})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+
+
 @ai_text_bp.route("/api/ai-text/predict", methods=["POST"])
 def predict():
     """
@@ -63,9 +104,9 @@ def predict():
         return jsonify({"error": "No file uploaded. Send a file with key 'file'."}), 400
 
     ext = Path(uploaded.filename).suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
+    if ext not in SUPPORTED_FILE_EXTENSIONS:
         return jsonify({
-            "error": f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+            "error": f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(SUPPORTED_FILE_EXTENSIONS))}"
         }), 400
 
     try:
@@ -82,7 +123,9 @@ def predict():
 
         result = detect(text, assignment_prompt=assignment_prompt)
 
-        return jsonify(result), 200
+        final_result = {"result":[result]}
+
+        return jsonify(final_result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

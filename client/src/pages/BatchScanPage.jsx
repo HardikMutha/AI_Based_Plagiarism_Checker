@@ -31,7 +31,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ComparisonCard } from "@/components/ComparisonCard"
+import { CodeCheckReport } from "@/components/reports/CodeCheckReport"
+import { MinHashReport } from "@/components/reports/MinHashReport"
+import { SemanticReport } from "@/components/reports/SemanticReport"
 
 // ── Route config ────────────────────────────────────────────────
 const SCAN_OPTIONS = [
@@ -651,14 +653,16 @@ const BatchScanPage = () => {
                 {/* Comparison cards */}
                 {results.results && results.results.length > 0 ? (
                   <div className="space-y-3">
-                    {results.results.map((r, idx) => (
-                      <ComparisonCard
-                        key={idx}
-                        data={r}
-                        index={idx}
-                        scoreScale={selectedOption?.scoreScale ?? 100}
-                      />
-                    ))}
+                    {results.results.map((r, idx) => {
+                      const scale = selectedOption?.scoreScale ?? 100
+                      if (scanType === "code_batch") {
+                        return <CodeCheckReport key={idx} data={r} index={idx} scoreScale={scale} />
+                      }
+                      if (scanType === "text_minhash") {
+                        return <MinHashReport key={idx} data={r} index={idx} scoreScale={scale} />
+                      }
+                      return <SemanticReport key={idx} data={r} index={idx} scoreScale={scale} />
+                    })}
                   </div>
                 ) : (
                   <Card>
