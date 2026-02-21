@@ -210,7 +210,7 @@ REPORT_TEMPLATE = """
                 <div class="meta-label">Total Files</div>
                 <div class="meta-value">{{ data.total_files or 0 }}</div>
             </div>
-            {% if not isAIDetection %}
+            {% if not isAIDetection and not isTextAI %}
             <div class="meta-col">
                 <div class="meta-label">Total Comparisons</div>
                 <div class="meta-value">{{ data.total_comparisons or 0 }}</div>
@@ -315,9 +315,213 @@ REPORT_TEMPLATE = """
     </div>
     {% endfor %}
     {% endif %}
+    <!-- ── Text AI Detection (multi-file) ── -->
+    {% if isTextAI and results and results|length > 0 %}
+
+    <div class='section-title'>Text AI Detection Results</div>
+
+    <!-- Summary Card with circular ring -->
+    {% set ns2 = namespace(total_score=0) %}
+    {% for item in results %}{% set ns2.total_score = ns2.total_score + (item.score or 0) %}{% endfor %}
+    {% set avg_score = ((ns2.total_score / results|length) * 100)|round(1) if results|length > 0 else 0 %}
+    {% set sum_sev = 'red' if avg_score >= 70 else ('amber' if avg_score >= 40 else 'green') %}
+    {% set ring_color = '#ef4444' if sum_sev == 'red' else ('#f59e0b' if sum_sev == 'amber' else '#22c55e') %}
+
+    <div class="card" style="border: 2px solid {{ ring_color }}40; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 24px;">
+            <!-- Circular score ring -->
+            <div style="width:96px; height:96px; border-radius:50%; border: 4px solid {{ ring_color }}60; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <div style="text-align: center;">
+                    <span class="ai-prob {{ sum_sev }}" style="font-size: 1.4rem;">{{ avg_score }}</span>
+                    <div style="font-size: 0.55rem; color: #94a3b8; margin-top: -2px;">% avg AI</div>
+                </div>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Multi-File Text AI Detection</div>
+                <div style="color: #64748b; font-size: 0.75rem; margin-top: 2px;">{{ results|length }} file{{ 's' if results|length != 1 else '' }} analyzed</div>
+                <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
+                    {% set t_high = [] %}
+                    {% for item in results %}{% if (item.score or 0) >= 0.7 %}{% if t_high.append(1) %}{% endif %}{% endif %}{% endfor %}
+                    {% set t_mod = [] %}
+                    {% for item in results %}{% if (item.score or 0) >= 0.4 and (item.score or 0) < 0.7 %}{% if t_mod.append(1) %}{% endif %}{% endif %}{% endfor %}
+                    {% if t_high|length > 0 %}<span class="badge badge-red">{{ t_high|length }} likely AI</span>{% endif %}
+                    {% if t_mod|length > 0 %}<span class="badge badge-amber">{{ t_mod|length }} needs review</span>{% endif %}
+                    {% if results|length - t_high|length - t_mod|length > 0 %}<span class="badge badge-green">{{ results|length - t_high|length - t_mod|length }} likely human</span>{% endif %}
+                </div>
+                <!-- Human ↔ AI progress bar -->
+                <div style="margin-top: 8px; max-width: 320px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: #94a3b8; margin-bottom: 3px;">
+                        <span>Human</span>
+                        <span>AI</span>
+                    </div>
+                    <div class="signal-progress-bg" style="height: 8px;">
+                        <div class="progress-bar {{ sum_sev }}" style="width: {{ [avg_score, 100]|min }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-file detailed cards -->
+    {% for item in results %}
+    {% set pct = ((item.score or 0) * 100)|round(1) %}
+    {% set sev = 'red' if pct >= 70 else ('amber' if pct >= 40 else 'green') %}
+    {% set sev_color = '#ef4444' if sev == 'red' else ('#f59e0b' if sev == 'amber' else '#22c55e') %}
+    {% set sev_text_color = '#dc2626' if sev == 'red' else ('#d97706' if sev == 'amber' else '#16a34a') %}
+    {% set fname = (item.filename or 'Unknown').split('/')[-1] %}
+    {% set verdict = item.verdict or 'Unknown' %}
+    {% set layers = item.layer_details or {} %}
+    {% set explanations = item.explanations or {} %}
+    {% set conclusions = explanations.conclusions or [] %}
+    {% set summary_text = explanations.summary or '' %}
+
+    <!-- File divider -->
+    {% if results|length > 1 %}
+    <div style="display: flex; align-items: center; gap: 12px; margin: 16px 0 12px 0;">
+        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+        <span style="font-size: 0.65rem; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">File {{ loop.index }} of {{ results|length }}</span>
+        <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+    </div>
+    {% endif %}
+
+    <!-- Verdict Card (circular ring + details) -->
+    <div class="card" style="border: 1px solid {{ sev_color }}40;">
+        <div style="display: flex; align-items: center; gap: 24px;">
+            <!-- Circular verdict ring -->
+            <div style="width:100px; height:100px; border-radius:50%; border: 4px solid {{ sev_color }}60; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <div style="text-align: center;">
+                    <span style="font-family: 'Roboto Mono', monospace; font-size: 1.5rem; font-weight: 700; color: {{ sev_text_color }};">{{ pct }}</span>
+                    <div style="font-size: 0.6rem; color: #94a3b8; margin-top: -2px;">% AI</div>
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <!-- Verdict label -->
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    {% if verdict == 'Likely AI' %}
+                    <span style="font-size: 0.85rem;"></span>
+                    {% elif verdict == 'Review Recommended' %}
+                    <span style="font-size: 0.85rem;"></span>
+                    {% else %}
+                    <span style="font-size: 0.85rem;"></span>
+                    {% endif %}
+                    <span style="font-size: 1rem; font-weight: 700; color: {{ sev_text_color }};">{{ verdict }}</span>
+                </div>
+                <div style="color: #64748b; font-size: 0.78rem;">{{ fname }}</div>
+                <!-- Human ↔ AI bar -->
+                <div style="margin-top: 8px; max-width: 300px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.58rem; color: #94a3b8; margin-bottom: 2px;">
+                        <span> Human</span>
+                        <span>AI </span>
+                    </div>
+                    <div class="signal-progress-bg" style="height: 8px;">
+                        <div class="progress-bar {{ sev }}" style="width: {{ [pct, 100]|min }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Conclusions Card -->
+    {% if summary_text or conclusions|length > 0 %}
+    <div class="card" style="margin-top: 8px;">
+        <div class="signal-section-label" style="margin-top: 0;">Analysis Conclusions</div>
+        <div style="color: #64748b; font-size: 0.68rem; margin-bottom: 10px;">Insights from vocabulary, style, rhythm, and semantic pattern analysis</div>
+
+        {% if summary_text %}
+        <div style="padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f080; border-radius: 8px; margin-bottom: 10px;">
+            <p style="font-size: 0.78rem; color: #0f172a; line-height: 1.55; margin: 0;">{{ summary_text }}</p>
+        </div>
+        {% endif %}
+
+        {% if conclusions|length > 0 %}
+        {% for c in conclusions %}
+        {% set c_sev = c.severity or 'low' %}
+        {% set dot_color = '#ef4444' if c_sev == 'high' else ('#f59e0b' if c_sev == 'medium' else '#94a3b8') %}
+        {% set c_label = 'Strong signal' if c_sev == 'high' else ('Moderate signal' if c_sev == 'medium' else 'Minor signal') %}
+        {% set c_bg = 'rgba(239,68,68,0.04)' if c_sev == 'high' else ('rgba(245,158,11,0.03)' if c_sev == 'medium' else 'transparent') %}
+        {% set c_border = 'rgba(239,68,68,0.2)' if c_sev == 'high' else ('rgba(245,158,11,0.2)' if c_sev == 'medium' else '#e2e8f080') %}
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid {{ c_border }}; background: {{ c_bg }}; margin-bottom: 6px;">
+            <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ dot_color }}; margin-top: 5px; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+                <span style="font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: {{ dot_color }};">{{ c_label }}</span>
+                <p style="font-size: 0.75rem; color: #0f172a; line-height: 1.5; margin: 2px 0 0 0;">{{ c.text }}</p>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Detection Layer Breakdown Card -->
+    {% if layers %}
+    <div class="card" style="margin-top: 8px;">
+        <div class="signal-section-label" style="margin-top: 0;">Detection Layer Breakdown</div>
+        <div style="color: #64748b; font-size: 0.68rem; margin-bottom: 10px;">Scores from each detection layer in the pipeline</div>
+
+        {% set ml = layers.ml_probability or 0 %}
+        {% set ml_pct = [ml * 100, 100]|min %}
+        {% set ml_sev = 'red' if ml_pct >= 65 else ('amber' if ml_pct >= 40 else 'green') %}
+        <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span style="font-size: 0.72rem; font-weight: 500;">ML Model Probability <span style="color: #64748b;">(weight: 55%)</span></span>
+                <span style="font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: {% if ml_pct >= 65 %}#dc2626{% elif ml_pct >= 40 %}#d97706{% else %}#64748b{% endif %};">{{ ml_pct|round(1) }}%</span>
+            </div>
+            <div class="signal-progress-bg" style="height: 5px;"><div class="progress-bar {{ ml_sev }}" style="width: {{ ml_pct }}%;"></div></div>
+        </div>
+
+        {% set hs = layers.heuristic_score or 0 %}
+        {% set hs_pct = [hs * 100, 100]|min %}
+        {% set hs_sev = 'red' if hs_pct >= 65 else ('amber' if hs_pct >= 40 else 'green') %}
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span style="font-size: 0.72rem; font-weight: 500;">Heuristic Score <span style="color: #64748b;">(weight: 20%)</span></span>
+                <span style="font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: {% if hs_pct >= 65 %}#dc2626{% elif hs_pct >= 40 %}#d97706{% else %}#64748b{% endif %};">{{ hs_pct|round(1) }}%</span>
+            </div>
+            <div class="signal-progress-bg" style="height: 5px;"><div class="progress-bar {{ hs_sev }}" style="width: {{ hs_pct }}%;"></div></div>
+        </div>
+
+        {% set ps = layers.pattern_scores or {} %}
+        {% if ps %}
+        <div style="margin-top: 4px;">
+            <div style="font-size: 0.68rem; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Pattern Analysis <span style="text-transform: none;">(weight: 25%)</span></div>
+            {% for pk, pv in [('drift_uniformity', 'Semantic Drift Uniformity'), ('first_last_sim', 'First-Last Paragraph Similarity'), ('loop_score', 'Logic Loop Score')] %}
+            {% set p_val = ps[pk] if ps[pk] is defined else 0 %}
+            {% set p_pct = [p_val * 100, 100]|min %}
+            {% set p_sev = 'red' if p_pct >= 65 else ('amber' if p_pct >= 40 else 'green') %}
+            <div style="margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                    <span style="font-size: 0.72rem; font-weight: 500;">{{ pv }}</span>
+                    <span style="font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: {% if p_pct >= 65 %}#dc2626{% elif p_pct >= 40 %}#d97706{% else %}#64748b{% endif %};">{{ p_pct|round(1) }}%</span>
+                </div>
+                <div class="signal-progress-bg" style="height: 5px;"><div class="progress-bar {{ p_sev }}" style="width: {{ p_pct }}%;"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Texture Features Grid -->
+    {% if layers.texture_features %}
+    <div class="card" style="margin-top: 8px;">
+        <div class="signal-section-label" style="margin-top: 0;">Texture Features</div>
+        <div style="color: #64748b; font-size: 0.68rem; margin-bottom: 10px;">All 20 extracted text features</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for feat_key, feat_val in layers.texture_features.items() %}
+            <div style="flex: 0 0 calc(33.333% - 6px); padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc;">
+                <div style="font-size: 0.55rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ feat_key }}">{{ feat_key.replace('_', ' ') }}</div>
+                <div style="font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; color: #0f172a; margin-top: 2px;">{{ '%.4f'|format(feat_val) if feat_val is number else feat_val }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% endfor %}
+    {% endif %}
 
     <!-- ── Comparison Results ── -->
-    {% if not isAIDetection and type != 'pdf_analysis' and results and results|length > 0 %}
+    {% if not isAIDetection and not isTextAI and type != 'pdf_analysis' and results and results|length > 0 %}
     <div class='section-title'>Comparison Results</div>
 
     {% for r in results %}
@@ -607,7 +811,7 @@ REPORT_TEMPLATE = """
 
     {% endif %}
 
-    {% if not isAIDetection and (not results or results|length == 0) %}
+    {% if not isAIDetection and not isTextAI and (not results or results|length == 0) %}
     <p style="color:#64748b;font-size:0.85rem;">No matches found.</p>
     {% endif %}
 

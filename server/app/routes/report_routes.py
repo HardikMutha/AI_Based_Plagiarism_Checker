@@ -43,10 +43,12 @@ def download_report_pdf(report_id):
         "semantic_similarity": {"label": "Text  Semantic", "scoreScale": 1},
         "code_ai_detection": {"label": "AI Detection", "scoreScale": 100},
         "pdf_analysis": {"label": "PDF Analysis", "scoreScale": 100},
+        "text_ai": {"label": "Text AI Detection", "scoreScale": 100},
     }
     FALLBACK_CONFIG = {"label": "Report", "scoreScale": 100}
     cfg = TYPE_CONFIG.get(type, FALLBACK_CONFIG)
     isAIDetection = type == "code_ai_detection"
+    isTextAI = type == "text_ai"
     results = data.get("results")
 
     # Render PDF
@@ -57,6 +59,7 @@ def download_report_pdf(report_id):
             "type": type,
             "cfg": cfg,
             "isAIDetection": isAIDetection,
+            "isTextAI": isTextAI,
             "results": results,
         })
     except Exception as e:
