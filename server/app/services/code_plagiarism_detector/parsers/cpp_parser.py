@@ -1,4 +1,4 @@
-"""C++ AST Parser — uses the `tree-sitter` library with `tree-sitter-cpp`."""
+"""C++ AST Parser — regex-based structural extraction."""
 
 from __future__ import annotations
 

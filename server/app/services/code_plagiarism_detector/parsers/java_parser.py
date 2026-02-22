@@ -1,4 +1,4 @@
-"""Java AST Parser — uses the `javalang` library."""
+"""Java AST Parser  uses the `javalang` library."""
 
 from __future__ import annotations
 

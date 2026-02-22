@@ -9,4 +9,3 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-key")
     IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
     SERPAPI_KEY = os.getenv("SERPAPI_KEY")
-    # Change this in production!

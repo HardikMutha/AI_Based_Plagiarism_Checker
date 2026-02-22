@@ -114,3 +114,7 @@ VERDICT_THRESHOLDS = {
     "likely_human": 0.35,
     "review_recommended": 0.65,
 }
+
+# Chunking for large documents
+CHUNK_WORD_LIMIT = 1000
+MIN_CHUNK_WORDS = 200

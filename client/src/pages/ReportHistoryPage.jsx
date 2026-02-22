@@ -7,7 +7,6 @@ import {
     FileCode,
     FileText,
     Bot,
-    Sparkles,
     ChevronRight,
     ChevronDown,
     AlertTriangle,
@@ -17,6 +16,8 @@ import {
     Inbox,
 } from "lucide-react"
 import { toast } from "sonner"
+
+const Sparkles = FileText;
 
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
@@ -28,7 +29,7 @@ import { Link } from "react-router-dom"
 // ── Type config ─────────────────────────────────────────────────
 const TYPE_CONFIG = {
     ast_comparison: {
-        label: "Code — AST",
+        label: "Code  AST",
         icon: FileCode,
         color: "text-violet-500",
         bg: "bg-violet-500/10",
@@ -37,7 +38,7 @@ const TYPE_CONFIG = {
         scoreScale: 100,
     },
     min_hash: {
-        label: "Text — MinHash",
+        label: "Local Text Plagiarism",
         icon: FileText,
         color: "text-sky-500",
         bg: "bg-sky-500/10",
@@ -46,7 +47,7 @@ const TYPE_CONFIG = {
         scoreScale: 1,
     },
     semantic_similarity: {
-        label: "Text — Semantic",
+        label: "Semantic Text Similarity",
         icon: Sparkles,
         color: "text-amber-500",
         bg: "bg-amber-500/10",
@@ -55,12 +56,30 @@ const TYPE_CONFIG = {
         scoreScale: 1,
     },
     code_ai_detection: {
-        label: "AI Detection",
+        label: "AI Generated Code",
         icon: Bot,
         color: "text-indigo-500",
         bg: "bg-indigo-500/10",
         border: "border-indigo-500/20",
         badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+        scoreScale: 100,
+    },
+    pdf_analysis: {
+        label: "PDF Analysis",
+        icon: Bot,
+        color: "text-indigo-500",
+        bg: "bg-indigo-500/10",
+        border: "border-indigo-500/20",
+        badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+        scoreScale: 100,
+    },
+    text_ai: {
+        label: "AI Generated Text",
+        icon: Bot,
+        color: "text-green-500",
+        bg: "bg-green-500/10",
+        border: "border-green-500/20",
+        badge: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
         scoreScale: 100,
     },
 }
@@ -116,6 +135,7 @@ const ReportHistoryPage = () => {
             })
             if (!res.ok) throw new Error("Failed to load reports")
             const data = await res.json()
+            console.log(data)
             setReports(data.reports || [])
         } catch (err) {
             toast.error(err.message)
@@ -323,17 +343,30 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
     const results = data.results
 
     // For AI detection, show probability
-    const isAIDetection = type === "code_ai_detection"
-    const aiProb = isAIDetection && results ? results.ai_probability : null
+    const isAICodeDetection = type === "code_ai_detection";
+    const isAITextDetection = type === "text_ai";
+    const isAnyAI = isAICodeDetection || isAITextDetection;
+    let aiProb = null;
+
+    if (isAICodeDetection && results) {
+        if (Array.isArray(results)) {
+            aiProb = results.reduce((s, r) => s + (r.ai_probability || 0), 0) / results.length;
+        } else {
+            aiProb = results.ai_probability ?? null;
+        }
+    } else if (isAITextDetection && Array.isArray(results)) {
+        aiProb = results.reduce((s, r) => s + (r.score || 0), 0) / results.length;
+    }
 
     // For comparison types, find max similarity
-    const maxSim = !isAIDetection && Array.isArray(results)
-        ? results.reduce((max, r) => {
-            const score = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? 0
-            const normalized = cfg.scoreScale === 1 ? score * 100 : score
-            return Math.max(max, normalized)
-        }, 0)
-        : null
+    let maxSim = null;
+    if (!isAnyAI && Array.isArray(results)) {
+        maxSim = results.reduce((max, r) => {
+            const score = r.overall_score ?? r.similarity_score ?? r.overall_similarity ?? r.similarity ?? r.jaccard_similarity ?? 0;
+            const normalized = cfg.scoreScale === 1 ? score * 100 : score;
+            return Math.max(max, normalized);
+        }, 0);
+    }
 
     return (
         <motion.div
@@ -397,7 +430,6 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                             </div>
                         )}
 
-                        {/* AI prob pill */}
                         {aiProb != null && (
                             <div className="text-right hidden sm:block">
                                 <p className="text-[10px] text-muted-foreground">AI prob</p>
@@ -473,11 +505,11 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                     </span>
                                 </div>
 
-                                {/* AI detection result */}
-                                {isAIDetection && results && (
+                                {/* AI code detection result */}
+                                {isAICodeDetection && results && (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
-                                            <Badge
+                                            {!Array.isArray(results) ? <Badge
                                                 variant="outline"
                                                 className={`text-xs font-semibold ${aiProb * 100 >= 70
                                                     ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8"
@@ -488,9 +520,28 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                             >
                                                 {results.verdict || "N/A"}
                                             </Badge>
+                                                :
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`text-xs font-semibold ${aiProb * 100 >= 70
+                                                        ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8"
+                                                        : aiProb * 100 >= 40
+                                                            ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/8"
+                                                            : "border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/8"
+                                                        }`}
+                                                >
+                                                    Average
+                                                </Badge>
+                                            }
                                             <span className="text-sm text-muted-foreground">
-                                                {results.file_name?.split("/").pop()} •{" "}
-                                                <code className="text-[11px]">{results.language}</code>
+                                                {Array.isArray(results)
+                                                    ? `1 of ${results.length} files • ${results[0]?.file_name?.split("/").pop()}`
+                                                    : results.file_name?.split("/").pop()}
+                                                {results.language && (
+                                                    <>
+                                                        {" "}• <code className="text-[11px]">{results.language}</code>
+                                                    </>
+                                                )}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3 max-w-xs">
@@ -517,8 +568,67 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                     </div>
                                 )}
 
+                                {/* AI text detection preview — per-file summary chips */}
+                                {isAITextDetection && Array.isArray(results) && results.length > 0 && (() => {
+                                    const avgPct = aiProb != null ? (aiProb * 100) : 0;
+                                    const highCount = results.filter(r => (r.score || 0) >= 0.7).length;
+                                    const modCount = results.filter(r => (r.score || 0) >= 0.4 && (r.score || 0) < 0.7).length;
+                                    const safeCount = results.length - highCount - modCount;
+                                    return (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Text AI Detection</span>
+                                                <span className="text-[10px] text-muted-foreground">•</span>
+                                                <span className="text-xs text-muted-foreground">{results.length} file{results.length !== 1 ? "s" : ""}</span>
+                                                {highCount > 0 && (
+                                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25">
+                                                        {highCount} likely AI
+                                                    </span>
+                                                )}
+                                                {modCount > 0 && (
+                                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                                        {modCount} needs review
+                                                    </span>
+                                                )}
+                                                {safeCount > 0 && (
+                                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/25">
+                                                        {safeCount} likely human
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                                                {results.map((r, idx) => {
+                                                    const pct = (r.score || 0) * 100;
+                                                    const sv = pct >= 70 ? "red" : pct >= 40 ? "amber" : "green";
+                                                    const tc = sv === "red" ? "text-red-600 dark:text-red-400" : sv === "amber" ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400";
+                                                    const bc = sv === "red" ? "[&>div]:bg-red-500" : sv === "amber" ? "[&>div]:bg-amber-500" : "[&>div]:bg-green-500";
+                                                    const badgeCls = sv === "red" ? "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/8" : sv === "amber" ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/8" : "border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/8";
+                                                    return (
+                                                        <div key={idx} className="flex items-center gap-3 p-2 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-medium truncate">{r.filename?.split("/").pop() || `File ${idx + 1}`}</p>
+                                                            </div>
+                                                            <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 ${badgeCls}`}>
+                                                                {r.verdict || "N/A"}
+                                                            </Badge>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <div className="w-14 hidden sm:block">
+                                                                    <Progress value={Math.min(pct, 100)} className={`h-1.5 ${bc}`} />
+                                                                </div>
+                                                                <span className={`text-sm font-bold font-mono tabular-nums ${tc}`}>
+                                                                    {pct.toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Comparison results */}
-                                {!isAIDetection && Array.isArray(results) && results.length > 0 && (
+                                {!isAnyAI && Array.isArray(results) && results.length > 0 && (
                                     <div className="space-y-2">
                                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                             Comparisons ({results.length})
@@ -590,7 +700,7 @@ function ReportCard({ report, expanded, onToggle, onDelete, deleting }) {
                                 )}
 
                                 {/* No results */}
-                                {!isAIDetection && (!Array.isArray(results) || results.length === 0) && (
+                                {!isAnyAI && (!Array.isArray(results) || results.length === 0) && (
                                     <p className="text-xs text-muted-foreground italic">No comparison data available.</p>
                                 )}
                             </div>

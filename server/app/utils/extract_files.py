@@ -6,7 +6,7 @@ import textract
 import re
 import zipfile
 
-def _extract_zip_and_collect_files(zip_path: str, extract_dir: str, SUPPORTED_EXTENSIONS: list) -> list[str]:
+def _extract_zip_and_collect_files(zip_path: str, extract_dir: str, SUPPORTED_EXTENSIONS: list, min_files: int = 2) -> list[str]:
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
 
         for member in zip_ref.namelist():
@@ -25,8 +25,8 @@ def _extract_zip_and_collect_files(zip_path: str, extract_dir: str, SUPPORTED_EX
             if Path(f).suffix.lower() in SUPPORTED_EXTENSIONS:
                 collected.append(os.path.join(root, f))
 
-    if len(collected) < 2:
-        raise ValueError("ZIP must contain at least TWO supported files.")
+    if len(collected) < min_files:
+        raise ValueError(f"ZIP must contain at least {min_files} supported file(s).")
 
 
     return collected
