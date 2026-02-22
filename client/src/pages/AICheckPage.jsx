@@ -36,32 +36,8 @@ import {
 import CodeResultsPanel from "@/components/ai-check/CodeResultsPanel";
 import TextResultsPanel from "@/components/ai-check/TextResultsPanel";
 
-<<<<<<< HEAD
-const LANGUAGE_OPTIONS = [
-  { value: "python", label: "Python", ext: ".py" },
-  { value: "java", label: "Java", ext: ".java" },
-  { value: "cpp", label: "C++", ext: ".cpp" },
-  { value: "c", label: "C", ext: ".c" }
-]
-
-function formatBytes(bytes) {
-  if (bytes === 0) return "0 B"
-  const k = 1024
-  const sizes = ["B", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
-}
-
-function getFileIcon(name) {
-  const ext = name.split(".").pop().toLowerCase()
-  if (ext === "zip") return FileArchive
-  return FileCode
-}
 
 // ── Main Page ───────────────────────────────────────────────────
-=======
-// ── Main Page ────────────────────────────────────────────────────
->>>>>>> 2ae9a99b65f0197a8efcc8e0b418314dee369655
 const AICheckPage = () => {
   const [detectionType, setDetectionType] = useState("");
   const [inputMode, setInputMode] = useState("file");
