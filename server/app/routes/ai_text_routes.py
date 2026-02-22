@@ -7,8 +7,8 @@ from pathlib import Path
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-
 from app.models.report_model import Report
+import docx
 
 
 _AI_TEXT_DIR = str(
@@ -43,8 +43,6 @@ def _extract_text(filepath: str, ext: str) -> str:
         return "\n".join(text_parts)
 
     if ext == ".docx":
-        import docx
-
         doc = docx.Document(filepath)
         return "\n".join(p.text for p in doc.paragraphs)
 
@@ -104,7 +102,7 @@ def batch_compare():
 
 
 @ai_text_bp.route("/api/ai-text/predict", methods=["POST"])
-@jwt_required
+@jwt_required()
 def predict():
     """
     Accept file uploads and return AI-text-detection results.

@@ -3,11 +3,15 @@
 AI Text Detector  Pipeline
 
 Orchestrates the 3 detection layers and produces a final verdict.
+Automatically chunks large documents (~1000 words per chunk) so that
+Layers 1+2 run per-chunk while Layer 3 runs on the full text.
 
 Usage:
     from detector import detect
     result = detect("Some essay text …", assignment_prompt="Write about X")
 """
+
+import re
 
 import numpy as np
 
@@ -15,12 +19,14 @@ import classifier
 import feature_extractor
 import pattern_analyzer
 from config import (
+    CHUNK_WORD_LIMIT,
+    MIN_CHUNK_WORDS,
     VERDICT_THRESHOLDS,
     WEIGHT_HEURISTIC,
     WEIGHT_ML,
     WEIGHT_PATTERN,
     MODEL_PATH,
-    SCALER_PATH
+    SCALER_PATH,
 )
 
 
@@ -264,9 +270,133 @@ def _generate_explanations(
     return {"conclusions": conclusions, "summary": summary}
 
 
+def _split_oversized_paragraph(
+    para: str,
+    target_words: int,
+    min_words: int,
+) -> list[str]:
+    """Break a single large paragraph into sentence-aligned pieces."""
+    sentences = re.split(r'(?<=[.!?])\s+', para)
+    segments: list[str] = []
+    current: list[str] = []
+    current_wc = 0
+
+    for sent in sentences:
+        swc = len(sent.split())
+        if current_wc + swc > target_words and current_wc >= min_words:
+            segments.append(" ".join(current))
+            current = [sent]
+            current_wc = swc
+        else:
+            current.append(sent)
+            current_wc += swc
+
+    if current:
+        tail = " ".join(current)
+        if segments and current_wc < min_words:
+            segments[-1] += " " + tail
+        else:
+            segments.append(tail)
+
+    return segments if segments else [para]
+
+
+def _chunk_text(
+    text: str,
+    target_words: int = CHUNK_WORD_LIMIT,
+    min_words: int = MIN_CHUNK_WORDS,
+) -> list[str]:
+    """
+    Split *text* into chunks of roughly *target_words*.
+
+    Strategy:
+      1. Split on paragraph boundaries (double newlines).
+      2. Any paragraph that still exceeds *target_words* is sub-split at
+         sentence boundaries so PDF-extracted text (which often lacks
+         double-newline breaks) is handled correctly.
+      3. The resulting segments are grouped into ~*target_words* chunks.
+      4. A trailing chunk smaller than *min_words* is merged into the
+         previous chunk so the feature extractor has enough signal.
+    """
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if not paragraphs:
+        return [text]
+
+    segments: list[str] = []
+    for para in paragraphs:
+        if len(para.split()) <= target_words:
+            segments.append(para)
+        else:
+            segments.extend(
+                _split_oversized_paragraph(para, target_words, min_words)
+            )
+
+    chunks: list[str] = []
+    current_parts: list[str] = []
+    current_wc = 0
+
+    for seg in segments:
+        seg_wc = len(seg.split())
+
+        if current_wc + seg_wc > target_words and current_wc >= min_words:
+            chunks.append("\n\n".join(current_parts))
+            current_parts = [seg]
+            current_wc = seg_wc
+        else:
+            current_parts.append(seg)
+            current_wc += seg_wc
+
+    if current_parts:
+        tail = "\n\n".join(current_parts)
+        if chunks and current_wc < min_words:
+            chunks[-1] += "\n\n" + tail
+        else:
+            chunks.append(tail)
+
+    return chunks if chunks else [text]
+
+
+def _detect_single(
+    text: str,
+    assignment_prompt: str | None,
+    clf: classifier.AiTextClassifier,
+) -> dict:
+    """Run the full 3-layer pipeline on a single (small) text."""
+    features = feature_extractor.extract(text)
+    ml_result = clf.predict(features)
+    pattern_result = pattern_analyzer.analyze(text, assignment_prompt)
+    heuristic = _heuristic_score(features)
+
+    final_score = _combine_scores(ml_result["probability"], pattern_result, heuristic)
+
+    explanations = _generate_explanations(
+        features, ml_result["probability"], pattern_result, heuristic, final_score
+    )
+
+    return {
+        "score": round(final_score, 4),
+        "verdict": _categorize(final_score),
+        "chunks_analyzed": 1,
+        "chunk_scores": [],
+        "layer_details": {
+            "texture_features": features,
+            "ml_probability": ml_result["probability"],
+            "pattern_scores": pattern_result,
+            "heuristic_score": heuristic,
+        },
+        "explanations": explanations,
+    }
+
+
 def detect(text: str, assignment_prompt: str | None = None) -> dict:
     """
     Run the full 3-layer detection pipeline.
+
+    For documents longer than CHUNK_WORD_LIMIT (~1000 words) the text is
+    split into paragraph-aligned chunks.  Layers 1 + 2 are evaluated
+    per-chunk and aggregated via a word-count-weighted average, while
+    Layer 3 (semantic patterns) runs on the full document so that
+    global signals like drift and first/last similarity are preserved.
 
     Parameters
     ----------
@@ -279,35 +409,89 @@ def detect(text: str, assignment_prompt: str | None = None) -> dict:
     Returns
     -------
     dict with keys:
-        score         - float 0.0 (human) to 1.0 (AI)
-        verdict       - "Likely Human" | "Review Recommended" | "Likely AI"
-        layer_details - per-layer breakdown for explainability
-        explanations  - { conclusions: [...], summary: str }
+        score           - float 0.0 (human) to 1.0 (AI)
+        verdict         - "Likely Human" | "Review Recommended" | "Likely AI"
+        chunks_analyzed - number of chunks processed
+        chunk_scores    - per-chunk score breakdown (empty when single-pass)
+        layer_details   - per-layer breakdown for explainability
+        explanations    - { conclusions: [...], summary: str }
     """
-    features = feature_extractor.extract(text)
+    clf = classifier.AiTextClassifier(MODEL_PATH, SCALER_PATH)
 
-    classifier_model = classifier.AiTextClassifier(MODEL_PATH, SCALER_PATH)
+    word_count = len(text.split())
+    if word_count <= CHUNK_WORD_LIMIT:
+        return _detect_single(text, assignment_prompt, clf)
 
-    ml_result = classifier_model.predict(features)
+    chunks = _chunk_text(text)
+    if len(chunks) == 1:
+        return _detect_single(text, assignment_prompt, clf)
 
+    # ── Layers 1 + 2: per-chunk ──────────────────────────────────────
+    chunk_data: list[dict] = []
+    chunk_word_counts: list[int] = []
+
+    for chunk in chunks:
+        wc = len(chunk.split())
+        features = feature_extractor.extract(chunk)
+        ml_result = clf.predict(features)
+        heuristic = _heuristic_score(features)
+        chunk_data.append({
+            "features": features,
+            "ml_prob": ml_result["probability"],
+            "heuristic": heuristic,
+        })
+        chunk_word_counts.append(wc)
+
+    total_words = sum(chunk_word_counts)
+    weights = [wc / total_words for wc in chunk_word_counts]
+
+    avg_ml_prob = sum(
+        d["ml_prob"] * w for d, w in zip(chunk_data, weights)
+    )
+    avg_heuristic = sum(
+        d["heuristic"] * w for d, w in zip(chunk_data, weights)
+    )
+
+    avg_features: dict[str, float] = {}
+    for key in chunk_data[0]["features"]:
+        avg_features[key] = sum(
+            d["features"][key] * w for d, w in zip(chunk_data, weights)
+        )
+
+    # ── Layer 3: full document ───────────────────────────────────────
     pattern_result = pattern_analyzer.analyze(text, assignment_prompt)
 
-    heuristic = _heuristic_score(features)
+    # ── Aggregate final score ────────────────────────────────────────
+    final_score = _combine_scores(avg_ml_prob, pattern_result, avg_heuristic)
 
-    final_score = _combine_scores(ml_result["probability"], pattern_result, heuristic)
+    # ── Per-chunk breakdown for transparency ─────────────────────────
+    chunk_scores: list[dict] = []
+    for i, (d, wc, chunk_text) in enumerate(
+        zip(chunk_data, chunk_word_counts, chunks)
+    ):
+        cs = _combine_scores(d["ml_prob"], pattern_result, d["heuristic"])
+        chunk_scores.append({
+            "chunk_index": i,
+            "word_count": wc,
+            "score": round(cs, 4),
+            "verdict": _categorize(cs),
+            "text": chunk_text,
+        })
 
     explanations = _generate_explanations(
-        features, ml_result["probability"], pattern_result, heuristic, final_score
+        avg_features, avg_ml_prob, pattern_result, avg_heuristic, final_score
     )
 
     return {
         "score": round(final_score, 4),
         "verdict": _categorize(final_score),
+        "chunks_analyzed": len(chunks),
+        "chunk_scores": chunk_scores,
         "layer_details": {
-            "texture_features": features,
-            "ml_probability": ml_result["probability"],
+            "texture_features": avg_features,
+            "ml_probability": avg_ml_prob,
             "pattern_scores": pattern_result,
-            "heuristic_score": heuristic,
+            "heuristic_score": avg_heuristic,
         },
         "explanations": explanations,
     }
