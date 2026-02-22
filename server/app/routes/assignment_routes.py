@@ -12,6 +12,7 @@ from bson import ObjectId
 from app.models.assignment_model import Assignment, parse_filename
 from app.models.report_model import Report
 from app.utils.extract_files import _extract_zip_and_collect_files
+from app.routes.ai_text_routes import _extract_text
 
 SUPPORTED_CODE_EXTENSIONS = {".py", ".java", ".cpp", ".js", ".c", ".cs"}
 SUPPORTED_TEXT_EXTENSIONS = {".txt", ".pdf", ".docx", ".doc", ".odt"}
@@ -214,8 +215,12 @@ def add_submissions(assignment_id):
                         roll_no, student_name = parse_filename(f, fmt)
 
                         # Read file content and store in DB
-                        with open(fp, "r", encoding="utf-8", errors="ignore") as fh:
-                            content = fh.read()
+                        ext = Path(f).suffix.lower()
+                        if ext in {".pdf", ".docx", ".txt"}:
+                            content = _extract_text(fp, ext)
+                        else:
+                            with open(fp, "r", encoding="utf-8", errors="ignore") as fh:
+                                content = fh.read()
 
                         subs.append({
                             "type": "file",
@@ -233,7 +238,17 @@ def add_submissions(assignment_id):
                 continue
             roll_no, student_name = parse_filename(uf.filename, fmt)
 
-            content = uf.read().decode("utf-8", errors="ignore")
+            if ext in {".pdf", ".docx", ".txt"}:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                    uf.save(tmp)
+                    tmp_path = tmp.name
+                
+                content = _extract_text(tmp_path, ext)
+                
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            else:
+                content = uf.read().decode("utf-8", errors="ignore")
 
             subs.append({
                 "type": "file",
@@ -311,8 +326,18 @@ def run_analysis(assignment_id):
 
         for sub in submissions:
             if sub.get("text_content"):
-                # Write text content to a temp file
-                fname = sub.get("original_name") or f"{sub.get('id', uuid.uuid4().hex)}{default_ext}"
+                print(f"Writing submission {sub.get('original_name')} to temp file for analysis.")
+                print(f"Content preview: {sub.get('text_content')[:100]}...")
+                # The content is already extracted plain text. 
+                # We should save it as a .txt file so downstream analyzers read it as text
+                # instead of trying to parse it as binary PDF/DOCX again.
+                original_name = sub.get("original_name")
+                if original_name:
+                    base, _ = os.path.splitext(original_name)
+                    fname = f"{base}.txt"
+                else:
+                    fname = f"{sub.get('id', uuid.uuid4().hex)}.txt"
+                
                 fp = os.path.join(tmp, fname)
                 # Ensure unique filename
                 if os.path.exists(fp):
@@ -380,6 +405,7 @@ def _run_detector(analysis_type, filepaths, user_id):
             "total_comparisons": len(results),
             "type": "min_hash",
             "results": results,
+
         }
 
     elif analysis_type == "semantic_similarity":
