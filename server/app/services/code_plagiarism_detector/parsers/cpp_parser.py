@@ -8,7 +8,7 @@ from app.services.code_plagiarism_detector.generic_node import GenericNode
 try:
     import tree_sitter_cpp
     from tree_sitter import Language, Parser
-
+    
     CPP_LANGUAGE = Language(tree_sitter_cpp.language())
     HAS_TREE_SITTER = True
 except ImportError:
