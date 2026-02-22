@@ -1,128 +1,185 @@
-"""C++ AST Parser — regex-based structural extraction."""
+"""C++ AST Parser — uses the `tree-sitter` library with `tree-sitter-cpp`."""
 
 from __future__ import annotations
-
-import re
-from typing import Optional
 
 from app.services.code_plagiarism_detector.base_parser import ASTParser
 from app.services.code_plagiarism_detector.generic_node import GenericNode
 
+try:
+    import tree_sitter_cpp
+    from tree_sitter import Language, Parser
+
+    CPP_LANGUAGE = Language(tree_sitter_cpp.language())
+    HAS_TREE_SITTER = True
+except ImportError:
+    HAS_TREE_SITTER = False
+
 
 class CppASTParser(ASTParser):
     """
-    C++ parser using regex-based structural extraction.
-    For production use, consider tree-sitter-cpp for full parsing.
+    C++ parser using tree-sitter for accurate AST extraction.
+    Install: pip install tree-sitter tree-sitter-cpp
     """
 
     name = "cpp"
     file_extensions = [".cpp", ".cc", ".cxx", ".hpp"]
 
+    ignore_nodes = {
+        "comment",
+        "preproc_include",
+        "preproc_def",
+        "preproc_ifdef",
+        "preproc_if",
+        "preproc_else",
+        "preproc_endif",
+        "preproc_call",
+        "system_lib_string",
+        "string_literal",
+        "number_literal",
+        "char_literal",
+        "null",
+        "true",
+        "false",
+        "primitive_type",
+        "type_qualifier",
+        "storage_class_specifier",
+        "namespace_identifier",
+        "ERROR",
+    }
+
+    def __init__(self):
+        if not HAS_TREE_SITTER:
+            raise ImportError(
+                "C++ support requires 'tree-sitter' and 'tree-sitter-cpp'. "
+                "Install: pip install tree-sitter tree-sitter-cpp"
+            )
+        self._parser = Parser(CPP_LANGUAGE)
+
     def parse(self, code: str) -> GenericNode:
-        code = self._strip_comments(code)
-        code = self._strip_preprocessor(code)
-        return self._parse_block(code, "MODULE")
+        tree = self._parser.parse(code.encode("utf-8"))
+        return self._convert(tree.root_node)
 
-    def _strip_comments(self, code: str) -> str:
-        code = re.sub(r"/\*[\s\S]*?\*/", "", code)
-        code = re.sub(r"//.*", "", code)
-        return code
+    def _convert(self, node) -> GenericNode:
+        node_type = self._map_node_type(node)
+        metadata = {}
 
-    def _strip_preprocessor(self, code: str) -> str:
-        lines = code.split("\n")
-        result = []
-        for line in lines:
-            if line.strip().startswith("#"):
-                result.append("")
-            else:
-                result.append(line)
-        return "\n".join(result)
-
-    def _parse_block(self, code: str, context: str = "BLOCK") -> GenericNode:
-        root = GenericNode(context)
-
-        # Detect classes/structs
-        for match in re.finditer(r"\b(class|struct)\s+(\w+)[^{]*\{", code):
-            cls_node = GenericNode("CLASS")
-            body = self._extract_braced(code, match.end() - 1)
-            if body:
-                for child in self._parse_block(body, "BLOCK").children:
-                    cls_node.add_child(child)
-            root.add_child(cls_node)
-
-        # Detect functions/methods
-        func_pattern = r"""
-            (?:(?:static|virtual|inline|const|explicit|override)\s+)*
-            (?:[\w:*&<>]+\s+)+
-            ([\w:~]+)
-            \s*\([^)]*\)
-            \s*(?:const)?\s*
-            \{
-        """
-        for match in re.finditer(func_pattern, code, re.VERBOSE):
-            func_node = GenericNode("FUNC")
-            param_str = re.search(r"\(([^)]*)\)", match.group())
-            if param_str:
+        # Capture parameter count for functions
+        if node.type in (
+            "function_definition",
+            "function_declarator",
+            "constructor_or_destructor_definition",
+        ):
+            param_list = self._find_child_by_type(node, "parameter_list")
+            if param_list:
                 params = [
-                    p.strip()
-                    for p in param_str.group(1).split(",")
-                    if p.strip()
+                    c for c in param_list.children
+                    if c.type == "parameter_declaration"
                 ]
-                func_node.metadata["param_count"] = len(params)
+                metadata["param_count"] = len(params)
 
-            body = self._extract_braced(code, match.end() - 1)
-            if body:
-                self._parse_statements(body, func_node)
-            root.add_child(func_node)
+        # Mark named declarations
+        name_node = self._find_child_by_type(node, "identifier") or \
+                    self._find_child_by_type(node, "field_identifier") or \
+                    self._find_child_by_type(node, "destructor_name")
+        if name_node:
+            metadata["name_present"] = True
 
-        return root
+        generic = GenericNode(node_type, metadata=metadata)
 
-    def _parse_statements(self, code: str, parent: GenericNode) -> None:
-        patterns = [
-            (r"\bfor\s*\(", "LOOP"),
-            (r"\bwhile\s*\(", "LOOP"),
-            (r"\bdo\s*\{", "LOOP"),
-            (r"\bif\s*\(", "COND"),
-            (r"\belse\s+if\s*\(", "COND"),
-            (r"\belse\s*\{", "COND"),
-            (r"\bswitch\s*\(", "SWITCH"),
-            (r"\bcase\s+", "CASE"),
-            (r"\btry\s*\{", "TRY"),
-            (r"\bcatch\s*\(", "CATCH"),
-            (r"\breturn\b", "RETURN"),
-            (r"\bthrow\b", "THROW"),
-            (r"\bbreak\b", "BREAK"),
-            (r"\bcontinue\b", "CONTINUE"),
-        ]
+        for child in node.children:
+            if child.type in self.ignore_nodes:
+                continue
+            # Skip purely punctuation / keyword leaf nodes
+            if not child.children and child.type in self._punctuation_types():
+                continue
+            child_generic = self._convert(child)
+            if child_generic.node_type != "UNKNOWN" or child.children:
+                generic.add_child(child_generic)
 
-        for pattern, node_type in patterns:
-            for match in re.finditer(pattern, code):
-                node = GenericNode(node_type)
-                brace_pos = code.find("{", match.end())
-                if brace_pos != -1 and brace_pos - match.end() < 50:
-                    body = self._extract_braced(code, brace_pos)
-                    if body:
-                        self._parse_statements(body, node)
-                parent.add_child(node)
+        return generic
 
-        for _ in re.finditer(r"[^=!<>]=[^=]", code):
-            parent.add_child(GenericNode("ASSIGN"))
-        for _ in re.finditer(r"\b\w+\s*\(", code):
-            parent.add_child(GenericNode("CALL"))
-        for _ in re.finditer(r"[+\-*/%](?!=)", code):
-            parent.add_child(GenericNode("BINOP"))
-        for _ in re.finditer(r"[<>]=?|[!=]=", code):
-            parent.add_child(GenericNode("COMPARE"))
+    def _map_node_type(self, node) -> str:
+        t = node.type
+        mapping = {
+            # Top-level
+            "translation_unit": "MODULE",
+            # Types / declarations
+            "class_specifier": "CLASS",
+            "struct_specifier": "CLASS",
+            "union_specifier": "CLASS",
+            "enum_specifier": "ENUM",
+            "namespace_definition": "NAMESPACE",
+            # Functions
+            "function_definition": "FUNC",
+            "constructor_or_destructor_definition": "FUNC",
+            "lambda_expression": "LAMBDA",
+            # Parameters
+            "parameter_declaration": "PARAM",
+            # Variables / assignments
+            "declaration": "ASSIGN",
+            "init_declarator": "ASSIGN",
+            "field_declaration": "ASSIGN",
+            "assignment_expression": "ASSIGN",
+            # Control flow
+            "if_statement": "COND",
+            "for_statement": "LOOP",
+            "while_statement": "LOOP",
+            "do_statement": "LOOP",
+            "for_range_loop": "LOOP",
+            "switch_statement": "SWITCH",
+            "case_statement": "CASE",
+            "return_statement": "RETURN",
+            "break_statement": "BREAK",
+            "continue_statement": "CONTINUE",
+            "goto_statement": "GOTO",
+            # Exception handling
+            "try_statement": "TRY",
+            "catch_clause": "CATCH",
+            "throw_statement": "THROW",
+            # Expressions
+            "call_expression": "CALL",
+            "binary_expression": "BINOP",
+            "unary_expression": "UNOP",
+            "conditional_expression": "TERNARY",
+            "subscript_expression": "INDEX",
+            "cast_expression": "CAST",
+            "new_expression": "CALL",
+            "delete_expression": "CALL",
+            "field_expression": "MEMBER",
+            "pointer_expression": "UNOP",
+            "identifier": "VAR",
+            "this": "VAR",
+            "template_function": "CALL",
+            # Misc
+            "compound_statement": "BLOCK",
+            "expression_statement": "EXPR_STMT",
+            "using_declaration": "IMPORT",
+            "using_directive": "IMPORT",
+            "template_declaration": "TEMPLATE",
+            "access_specifier": "ACCESS_SPEC",
+        }
+        return mapping.get(t, "UNKNOWN")
 
-    def _extract_braced(self, code: str, start: int) -> Optional[str]:
-        if start >= len(code) or code[start] != "{":
-            return None
-        depth = 0
-        for i in range(start, len(code)):
-            if code[i] == "{":
-                depth += 1
-            elif code[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    return code[start + 1 : i]
+    def _find_child_by_type(self, node, child_type: str):
+        for child in node.children:
+            if child.type == child_type:
+                return child
         return None
+
+    @staticmethod
+    def _punctuation_types() -> set:
+        return {
+            "{", "}", "(", ")", "[", "]", ";", ",", ":",
+            "::", ".", "->", "...", "<", ">",
+            "public", "private", "protected",
+            "class", "struct", "union", "enum", "namespace",
+            "if", "else", "for", "while", "do", "switch", "case",
+            "return", "break", "continue", "goto",
+            "try", "catch", "throw",
+            "new", "delete", "this",
+            "using", "template", "typename", "auto",
+            "virtual", "override", "final", "static", "inline",
+            "const", "constexpr", "volatile", "explicit", "friend",
+            "operator", "sizeof", "alignof", "decltype", "noexcept",
+            "default", "nullptr",
+        }

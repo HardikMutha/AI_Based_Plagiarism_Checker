@@ -137,6 +137,7 @@ def api_ai_detect():
                 "results": results,
             }
             Report.create_report(current_user_id, report)
+            print(report)   
             return jsonify(report)
 
         except Exception as e:

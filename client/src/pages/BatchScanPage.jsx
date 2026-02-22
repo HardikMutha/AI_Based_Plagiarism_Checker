@@ -87,9 +87,7 @@ const CODE_LANG_OPTIONS = [
   { value: "py", label: "Python", ext: ".py" },
   { value: "java", label: "Java", ext: ".java" },
   { value: "cpp", label: "C++", ext: ".cpp" },
-  { value: "js", label: "JavaScript", ext: ".js" },
   { value: "c", label: "C", ext: ".c" },
-  { value: "cs", label: "C#", ext: ".cs" },
 ]
 
 // ── Main Page ───────────────────────────────────────────────────
