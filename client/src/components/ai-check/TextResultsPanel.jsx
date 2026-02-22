@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { motion } from "framer-motion"
 import {
   ShieldCheck,
@@ -6,10 +7,14 @@ import {
   ChevronRight,
   Bot,
   User,
+  Layers,
 } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import ChunkScoresModal from "@/components/ai-check/ChunkScoresModal"
 
 function barColor(pct) {
   if (pct >= 65) return "[&>div]:bg-red-500"
@@ -51,6 +56,8 @@ const CONCLUSION_STYLES = {
 }
 
 export default function TextResultsPanel({ result }) {
+  const [chunkModalOpen, setChunkModalOpen] = useState(false)
+
   const score = result.score * 100
   const scoreStr = score.toFixed(1)
   const verdict = result.verdict
@@ -58,6 +65,9 @@ export default function TextResultsPanel({ result }) {
   const explanations = result.explanations || {}
   const conclusions = explanations.conclusions || []
   const summary = explanations.summary || ""
+
+  const chunksAnalyzed = result.chunks_analyzed ?? 1
+  const chunkScores = result.chunk_scores ?? []
 
   const isLikelyAI = verdict === "Likely AI"
   const isReview = verdict === "Review Recommended"
@@ -123,10 +133,35 @@ export default function TextResultsPanel({ result }) {
                 </div>
                 <Progress value={score} className={`h-2.5 ${progressColor}`} />
               </div>
+
+              {chunkScores.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 mt-1"
+                  onClick={() => setChunkModalOpen(true)}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  View Chunk Results
+                  <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">
+                    {chunksAnalyzed}
+                  </Badge>
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Chunk Scores Modal */}
+      {chunkScores.length > 0 && (
+        <ChunkScoresModal
+          open={chunkModalOpen}
+          onOpenChange={setChunkModalOpen}
+          chunkScores={chunkScores}
+          overallScore={result.score}
+        />
+      )}
 
       {/* Analysis Conclusions */}
       {(summary || conclusions.length > 0) && (
