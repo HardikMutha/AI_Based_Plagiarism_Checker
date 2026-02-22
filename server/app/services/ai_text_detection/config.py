@@ -2,7 +2,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
-DATASET_PATH = os.path.join(BASE_DIR, "model_filtered.csv")
+DATASET_PATH = os.path.join(BASE_DIR, "new_dataset.csv")
 
 # Curated AI Marker Word Lists
 # Based on well-documented AI writing patterns - NOT data-mined.
