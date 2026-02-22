@@ -41,7 +41,6 @@ class PlagiarismDetector:
         tree_b = parser_b.parse(code_b)
 
 
-
         return self._compare_trees(
             tree_a, tree_b, label_a, label_b, language_a, language_b,
             code_a, code_b,

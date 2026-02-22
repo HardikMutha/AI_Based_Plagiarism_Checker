@@ -33,9 +33,7 @@ export const LANGUAGE_OPTIONS = [
   { value: "python", label: "Python", ext: ".py" },
   { value: "java", label: "Java", ext: ".java" },
   { value: "cpp", label: "C++", ext: ".cpp" },
-  { value: "javascript", label: "JavaScript", ext: ".js" },
-  { value: "c", label: "C", ext: ".c" },
-  { value: "csharp", label: "C#", ext: ".cs" },
+  { value: "c", label: "C", ext: ".c" }
 ]
 
 export function formatBytes(bytes) {

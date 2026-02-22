@@ -56,16 +56,8 @@ def extract_text_from_file(file_storage):
 @citation_bp.route("/check", methods=["POST"])
 @jwt_required()
 def check_citations():
-    """
-    Accepts either:
-      - JSON body with { "text": "..." }
-      - multipart/form-data with a file field named "file"
-        (optionally combined with a "text" field)
-    Returns suspicious sentences and candidate citation papers.
-    """
     text = ""
 
-    # Handle file upload
     if "file" in request.files:
         uploaded = request.files["file"]
         if uploaded.filename:
@@ -74,7 +66,6 @@ def check_citations():
             except ValueError as e:
                 return jsonify({"error": str(e)}), 400
 
-    # Handle text input (either from form-data or JSON)
     if not text:
         if request.is_json:
             data = request.get_json()
@@ -99,10 +90,10 @@ def check_citations():
                 "message": "No sentences requiring citations were detected in the provided text."
             })
 
-        openalex_papers = fetch_openalex_for_contexts(suspicious)
+        # openalex_papers = fetch_openalex_for_contexts(suspicious)
+        openalex_papers = []
         arxiv_papers = fetch_arxiv_for_contexts(suspicious)
 
-        # Merge and deduplicate papers by (title, doi)
         all_papers = openalex_papers + arxiv_papers
         seen = {}
         for p in all_papers:
@@ -112,11 +103,9 @@ def check_citations():
             )
             if key in seen:
                 existing = seen[key]
-                # Collect unique matched sentences
                 ms = p.get("matched_sentence", "")
                 if ms and ms not in existing["matched_sentences"]:
                     existing["matched_sentences"].append(ms)
-                # Keep best similarity and its source
                 if (p.get("similarity", 0) or 0) > (existing.get("similarity", 0) or 0):
                     existing["similarity"] = p["similarity"]
                     existing["source"] = p.get("source", "openalex")

@@ -36,7 +36,8 @@ import {
 import CodeResultsPanel from "@/components/ai-check/CodeResultsPanel";
 import TextResultsPanel from "@/components/ai-check/TextResultsPanel";
 
-// ── Main Page ────────────────────────────────────────────────────
+
+// ── Main Page ───────────────────────────────────────────────────
 const AICheckPage = () => {
   const [detectionType, setDetectionType] = useState("");
   const [inputMode, setInputMode] = useState("file");
