@@ -417,8 +417,41 @@ def _run_detector(analysis_type, filepaths, user_id):
             "results": results,
         }
 
+    elif analysis_type == "text_ai":
+        import sys
+        _ai_text_dir = str(
+            Path(__file__).resolve().parent.parent / "services" / "ai_text_detection"
+        )
+        if _ai_text_dir not in sys.path:
+            sys.path.insert(0, _ai_text_dir)
+        from detector import detect
+        from app.routes.ai_text_routes import _extract_text
+
+        if len(filepaths) < 1:
+            raise ValueError("Need at least 1 file for AI text detection.")
+
+        results = []
+        for fp in filepaths:
+            ext = Path(fp).suffix.lower()
+            text = _extract_text(fp, ext)
+            if text and text.strip():
+                result = detect(text)
+                result["filename"] = os.path.basename(fp)
+                results.append(result)
+
+        if not results:
+            raise ValueError("Could not extract text from any submission file.")
+
+        return {
+            "user_id": user_id,
+            "total_files": len(filepaths),
+            "total_comparisons": 0,
+            "type": "text_ai",
+            "results": results,
+        }
+
     else:
         raise ValueError(
             f"Unknown analysis type '{analysis_type}'. "
-            "Supported: ast_comparison, min_hash, semantic_similarity, code_ai_detection"
+            "Supported: ast_comparison, min_hash, semantic_similarity, code_ai_detection, text_ai"
         )
