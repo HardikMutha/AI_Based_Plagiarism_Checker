@@ -18,7 +18,6 @@ import {
     X,
     BarChart3,
     ExternalLink,
-    Trophy,
     ShieldAlert,
     ChevronDown,
     Eye,
@@ -64,6 +63,7 @@ const ANALYSIS_OPTIONS = {
     text: [
         { type: "min_hash", label: "MinHash", desc: "Fast approximate text similarity", minFiles: 2 },
         { type: "semantic_similarity", label: "Semantic Similarity", desc: "Deep meaning-based comparison", minFiles: 2 },
+        { type: "text_ai", label: "AI Text Detection", desc: "Detect AI-generated text content", minFiles: 1 },
     ],
     pdf: [
         { type: "min_hash", label: "MinHash", desc: "Text similarity across PDFs", minFiles: 2 },
@@ -76,6 +76,7 @@ const ANALYSIS_TYPE_LABELS = {
     min_hash: "MinHash",
     semantic_similarity: "Semantic Similarity",
     code_ai_detection: "AI Code Detection",
+    text_ai: "AI Text Detection",
 };
 
 function timeAgo(dateStr) {
@@ -258,9 +259,15 @@ const AssignmentDetailPage = () => {
             const report = await res.json();
             toast.success(`${ANALYSIS_TYPE_LABELS[analysisType]} completed!`);
 
-            // Refresh assignment to get updated analyses list
+            // Navigate directly to the report
+            const reportId = report._id || report.id;
+            if (reportId) {
+                navigate(`/reports/${reportId}`);
+                return;
+            }
+
+            // Fallback: refresh if no id
             await fetchAssignment();
-            // Refresh rankings
             fetchRankings();
         } catch (err) {
             toast.error(err.message);
@@ -345,6 +352,15 @@ const AssignmentDetailPage = () => {
                             const student = matchStudent(item.file_name);
                             const entry = getOrCreate(student);
                             entry.ai_probability = item.ai_probability;
+                            entry.ai_verdict = item.verdict;
+                        }
+                    } else if (type === "text_ai") {
+                        // text_ai results use 'score' instead of 'ai_probability'
+                        const items = Array.isArray(results) ? results : [results];
+                        for (const item of items) {
+                            const student = matchStudent(item.filename);
+                            const entry = getOrCreate(student);
+                            entry.ai_probability = item.score;
                             entry.ai_verdict = item.verdict;
                         }
                     } else if (Array.isArray(results)) {
@@ -497,8 +513,8 @@ const AssignmentDetailPage = () => {
                             <TabsTrigger value="analyze">Run Scans</TabsTrigger>
                             <TabsTrigger value="history">Scan History</TabsTrigger>
                             <TabsTrigger value="rankings" className="gap-1.5">
-                                <Trophy className="h-3.5 w-3.5" />
-                                Rankings
+                                <ShieldAlert className="h-3.5 w-3.5" />
+                                Flagged
                             </TabsTrigger>
                         </TabsList>
 
@@ -721,34 +737,38 @@ const AssignmentDetailPage = () => {
                                     <div className="text-sm text-muted-foreground">
                                         Choose which analysis to run on the {submissions.length} submission{submissions.length !== 1 ? "s" : ""} in this assignment.
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
                                         {options.map((opt) => {
                                             const disabled = submissions.length < opt.minFiles;
                                             const isRunning = analyzing === opt.type;
                                             return (
-                                                <Card key={opt.type} className={disabled ? "opacity-50" : ""}>
-                                                    <CardContent className="p-5">
-                                                        <h4 className="font-semibold text-sm">{opt.label}</h4>
-                                                        <p className="text-xs text-muted-foreground mt-1">{opt.desc}</p>
-                                                        {disabled && (
-                                                            <p className="text-[11px] text-amber-600 mt-2">
-                                                                Requires at least {opt.minFiles} submissions.
-                                                            </p>
-                                                        )}
+                                                <Card key={opt.type} className={`transition-colors ${disabled ? "opacity-50" : "hover:bg-muted/30"}`}>
+                                                    <div className="flex items-center gap-4 px-4 py-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-semibold text-sm">{opt.label}</h4>
+                                                                {disabled && (
+                                                                    <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30">
+                                                                        min {opt.minFiles} files
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{opt.desc}</p>
+                                                        </div>
                                                         <Button
                                                             size="sm"
-                                                            className="mt-3 gap-2"
+                                                            className="gap-2 shrink-0"
                                                             disabled={disabled || analyzing !== null}
                                                             onClick={() => handleAnalyze(opt.type)}
                                                         >
                                                             {isRunning ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                             ) : (
-                                                                <Play className="h-4 w-4" />
+                                                                <Play className="h-3.5 w-3.5" />
                                                             )}
-                                                            {isRunning ? "Running…" : "Run Scan"}
+                                                            {isRunning ? "Running…" : "Run"}
                                                         </Button>
-                                                    </CardContent>
+                                                    </div>
                                                 </Card>
                                             );
                                         })}
@@ -813,16 +833,16 @@ const AssignmentDetailPage = () => {
                                 </div>
                             ) : !rankings || rankings.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">
-                                    <Trophy className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                                    <p className="font-medium">No rankings available</p>
+                                    <ShieldAlert className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                    <p className="font-medium">No flagged submissions</p>
                                     <p className="text-sm mt-1">
-                                        Run at least one scan to see student rankings.
+                                        Run at least one scan to see flagged students.
                                     </p>
                                 </div>
                             ) : (
                                 <>
                                     <div className="text-sm text-muted-foreground">
-                                        Students ranked by suspicion level across all completed scans.
+                                        Students ranked by suspicion level — flagged pairs, similarity scores, and AI detection probability.
                                     </div>
                                     <Card>
                                         <CardContent className="p-0">
@@ -849,7 +869,7 @@ const AssignmentDetailPage = () => {
                                                             >
                                                                 <div className="col-span-1">
                                                                     {idx === 0 && rankings.length > 1 && (s.flagged_pairs > 0 || s.max_score > 0 || s.ai_probability > 0) ? (
-                                                                        <span className="text-amber-500">🏆</span>
+                                                                        <span className="text-red-500">⚠️</span>
                                                                     ) : (
                                                                         <span className="text-xs text-muted-foreground">{idx + 1}</span>
                                                                     )}

@@ -108,7 +108,7 @@ const LandingPage = () => {
     {
       title: "LMS Integration",
       description:
-        "Seamless integration with Moodle, Google Classroom, and other learning management systems.",
+        "Seamless integration with Learning Management Systems like Moodle.",
       icon: GraduationCap,
     },
     {
@@ -141,20 +141,7 @@ const LandingPage = () => {
         "Detailed originality report with similarity scores and citation suggestions",
       icon: BarChart3,
     },
-    {
-      number: "04",
-      title: "Review & Grade",
-      description:
-        "Instructors review findings and provide feedback with integrated grading",
-      icon: CheckCircle,
-    },
-  ];
-
-  const stats = [
-    { value: "99.7%", label: "Detection Accuracy", icon: Shield },
-    { value: "50M+", label: "Sources Indexed", icon: Globe },
-    { value: "15+", label: "Programming Languages", icon: Code },
-    { value: "10K+", label: "Active Institutions", icon: Users },
+  
   ];
 
   const fadeInUp = {
@@ -205,24 +192,6 @@ const LandingPage = () => {
               </motion.div>
 
               <NavigationMenu className="hidden md:flex">
-                <NavigationMenuList>
-                  {["Features", "How It Works", "Pricing", "Contact"].map(
-                    (item, index) => (
-                      <motion.div
-                        key={item}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                      >
-                        <NavigationMenuItem>
-                          <NavigationMenuLink className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
-                            {item}
-                          </NavigationMenuLink>
-                        </NavigationMenuItem>
-                      </motion.div>
-                    ),
-                  )}
-                </NavigationMenuList>
               </NavigationMenu>
 
               <motion.div
@@ -334,33 +303,14 @@ const LandingPage = () => {
               animate={statsInView ? "visible" : "hidden"}
               className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto border-t border-zinc-100 dark:border-zinc-800 pt-12"
             >
-              {stats.map((stat, index) => {
-                const Icon = stat.icon;
-                return (
-                  <motion.div
-                    key={index}
-                    variants={fadeInUp}
-                    className="text-center group"
-                  >
-                    <div className="w-12 h-12 mx-auto mb-4 bg-zinc-50 dark:bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-100 dark:border-zinc-800 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800 transition-colors">
-                      <Icon className="w-5 h-5 text-zinc-900 dark:text-zinc-300" />
-                    </div>
-                    <div className="text-3xl md:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-widest">
-                      {stat.label}
-                    </div>
-                  </motion.div>
-                );
-              })}
+              
             </motion.div>
           </div>
         </section>
 
         <section
           ref={featuresRef}
-          className="py-24 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300"
+          className="py-20 bg-zinc-50 dark:bg-zinc-900/50 transition-colors duration-300"
         >
           <div className="container mx-auto px-4">
             <motion.div
@@ -434,7 +384,7 @@ const LandingPage = () => {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {steps.map((step, index) => {
                 const Icon = step.icon;
                 return (
@@ -514,7 +464,7 @@ const LandingPage = () => {
               viewport={{ once: true }}
               className="flex flex-wrap justify-center gap-4 mb-14"
             >
-              {["Moodle", "Google Classroom", "Canvas", "Blackboard"].map(
+              {["Moodle"].map(
                 (lms, index) => (
                   <motion.div
                     key={index}
@@ -546,130 +496,12 @@ const LandingPage = () => {
               transition={{ duration: 0.7 }}
               viewport={{ once: true }}
             >
-              <Card className="bg-zinc-950 dark:bg-zinc-900 text-white border border-transparent dark:border-zinc-800 shadow-2xl overflow-hidden relative rounded-3xl">
-                <CardContent className="relative py-20 px-8 text-center">
-                  <motion.h2
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    viewport={{ once: true }}
-                    className="text-3xl md:text-5xl font-bold mb-6 tracking-tight"
-                  >
-                    Start Ensuring Academic Integrity Today
-                  </motion.h2>
 
-                  <motion.p
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    viewport={{ once: true }}
-                    className="text-lg text-zinc-400 mb-10 max-w-2xl mx-auto"
-                  >
-                    Join thousands of educational institutions using our
-                    platform to maintain absolute academic standards.
-                  </motion.p>
-
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    viewport={{ once: true }}
-                    className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto"
-                  >
-                    <Input
-                      type="email"
-                      placeholder="Enter your work email"
-                      className="bg-zinc-900 dark:bg-zinc-950 border-zinc-800 dark:border-zinc-700 text-white placeholder:text-zinc-500 h-12 focus-visible:ring-1 focus-visible:ring-zinc-700"
-                    />
-                    <Button
-                      onClick={() => navigate("/login")}
-                      className="bg-white text-black hover:bg-zinc-200 h-12 px-8 whitespace-nowrap w-full sm:w-auto font-semibold"
-                    >
-                      Sign Up Now
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                </CardContent>
-              </Card>
             </motion.div>
           </div>
         </section>
 
-        <footer className="bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
-          <div className="container mx-auto px-4 py-16 max-w-7xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-              >
-                <div className="flex items-center space-x-2 mb-4">
-                  <BookOpen className="w-6 h-6 text-zinc-950 dark:text-white" />
-                  <span className="font-bold text-lg text-zinc-950 dark:text-white tracking-tight">
-                    Plagiarism Checker
-                  </span>
-                </div>
-                <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
-                  Advanced plagiarism detection and structural code analysis for
-                  modern educational institutions.
-                </p>
-              </motion.div>
-
-              {["Product", "Resources", "Legal"].map((section, idx) => (
-                <motion.div
-                  key={section}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <h4 className="font-bold text-zinc-950 dark:text-white mb-6">
-                    {section}
-                  </h4>
-                  <ul className="space-y-3 text-sm text-zinc-500 dark:text-zinc-400">
-                    <li className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                      {section === "Product" && "Features"}
-                      {section === "Resources" && "Documentation"}
-                      {section === "Legal" && "Privacy Policy"}
-                    </li>
-                    <li className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                      {section === "Product" && "Pricing"}
-                      {section === "Resources" && "Support"}
-                      {section === "Legal" && "Terms of Service"}
-                    </li>
-                    <li className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                      {section === "Product" && "Integration"}
-                      {section === "Resources" && "Blog"}
-                      {section === "Legal" && "Security"}
-                    </li>
-                  </ul>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              viewport={{ once: true }}
-              className="border-t border-zinc-200 dark:border-zinc-800 mt-16 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-zinc-500 dark:text-zinc-400"
-            >
-              <p>&copy; 2026. All rights reserved.</p>
-              <div className="flex space-x-6 mt-4 md:mt-0">
-                <span className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  Twitter
-                </span>
-                <span className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  LinkedIn
-                </span>
-                <span className="cursor-pointer hover:text-zinc-900 dark:hover:text-white transition-colors">
-                  GitHub
-                </span>
-              </div>
-            </motion.div>
-          </div>
-        </footer>
+        
       </div>
     </div>
   );
