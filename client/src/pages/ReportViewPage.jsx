@@ -137,7 +137,7 @@ const ReportViewPage = () => {
             <div className="flex flex-col min-h-screen bg-transparent">
                 <header className="print-hidden h-16 border-b bg-card/80 backdrop-blur-md flex items-center justify-between px-6 z-10 sticky top-0 shrink-0">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => navigate("/reports")}>
+                        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <h1 className="text-xl font-semibold hidden sm:block">Report Details</h1>
